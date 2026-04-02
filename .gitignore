@@ -9,11 +9,8 @@ myenv/
 .DS_Store
 *.log
 
-model/*.pt
-model/*.task
-!model/.gitkeep
+model/*
 
 runs/
 output/
-deformity_masked/
-deformity_face_detection_preview/
+
