@@ -1,3 +1,7 @@
+"""
+绘制模块：根据检测框在图像上执行黑色眼罩遮挡。
+"""
+
 import cv2
 
 
@@ -31,6 +35,7 @@ def keep_gap_between_two_boxes(box_a, box_b, min_gap: int = 6):
 
 def apply_padding_and_keep_gap(boxes, w: int, h: int, pad_x: int, pad_y: int, min_gap: int = 8):
     # 先扩边，再保证左右眼之间留缝。
+    # 这里不关心框来源（MediaPipe/MTCNN），只做几何后处理。
     padded = []
     for x1, y1, x2, y2 in boxes:
         box = safe_box(x1 - pad_x, y1 - pad_y, x2 + pad_x, y2 + pad_y, w, h)
@@ -50,7 +55,7 @@ def apply_padding_and_keep_gap(boxes, w: int, h: int, pad_x: int, pad_y: int, mi
 
 
 def draw_black_eye_masks(image, boxes, pad_x: int, pad_y: int, min_gap: int = 8):
-    # 在图像上画黑色眼罩。
+    # 在图像上画黑色眼罩，并返回最终落地的遮挡框。
     h, w = image.shape[:2]
     final_boxes = apply_padding_and_keep_gap(
         boxes=boxes,

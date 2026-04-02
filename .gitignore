@@ -16,3 +16,4 @@ model/*.task
 runs/
 output/
 deformity_masked/
+deformity_face_detection_preview/

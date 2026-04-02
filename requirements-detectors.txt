@@ -1,0 +1,14 @@
+# 可选：多模型人脸检测对比所需依赖
+# 安装命令：
+#   pip install -r requirements-detectors.txt
+
+# RetinaFace
+retina-face
+tf-keras
+
+# SCRFD (insightface) + ONNX Runtime
+insightface
+onnxruntime
+
+# YOLOv8-Face(改造版)
+ultralytics

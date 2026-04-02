@@ -1,3 +1,10 @@
+"""
+检测模块：
+- MediaPipe 负责主检测（正脸/轻侧脸，精度高）；
+- MTCNN 负责兜底（侧脸或 FaceLandmarker 失败场景）；
+- 同时提供语义框输出（眼睛/鼻子/嘴巴）用于可视化检查。
+"""
+
 from pathlib import Path
 
 import cv2
@@ -8,7 +15,7 @@ from mediapipe.tasks import python as mp_python
 from mediapipe.tasks.python import vision
 
 
-# MediaPipe FaceMesh 左右眼关键点索引。
+# MediaPipe FaceMesh 左右眼关键点索引
 LEFT_EYE_INDICES = [
     33, 246, 161, 160, 159, 158, 157, 173,
     133, 155, 154, 153, 145, 144, 163, 7,
@@ -18,7 +25,17 @@ RIGHT_EYE_INDICES = [
     263, 249, 390, 373, 374, 380, 381, 382,
 ]
 
-# MTCNN 动态参数。
+# 用于可视化语义框的关键点索引
+NOSE_INDICES = [
+    1, 2, 4, 5, 6, 19, 45, 51, 94, 97, 98, 122, 168, 195, 197, 220, 275, 281, 326, 327, 344, 440,
+]
+MOUTH_INDICES = [
+    0, 13, 14, 17, 37, 39, 40, 61, 78, 80, 81, 82, 84, 87, 88, 91, 95, 146, 178, 181, 185, 191, 267,
+    269, 270, 291, 308, 310, 311, 312, 314, 317, 318, 321, 324, 375, 402, 405, 409, 415,
+]
+
+# MTCNN 动态参数
+# 说明：这些比例均相对“检测到的人脸框”计算，便于适配不同分辨率。
 MTCNN_MIN_PROB = 0.70
 MTCNN_PROFILE_THRESHOLD = 0.22
 MTCNN_EYE_W_FACE_RATIO = 0.08
@@ -61,13 +78,13 @@ def keep_gap_between_two_boxes(box_a, box_b, min_gap: int = 6):
 def load_mtcnn_weights_from_model_dir(detector: MTCNN, model_dir: Path, device: torch.device) -> None:
     # 从本地 model 目录加载 MTCNN 权重。
     weight_map = {
-        'pnet': model_dir / 'pnet.pt',
-        'rnet': model_dir / 'rnet.pt',
-        'onet': model_dir / 'onet.pt',
+        "pnet": model_dir / "pnet.pt",
+        "rnet": model_dir / "rnet.pt",
+        "onet": model_dir / "onet.pt",
     }
     for net_name, weight_path in weight_map.items():
         if not weight_path.exists():
-            print(f'[WARN] MTCNN {net_name} 权重不存在: {weight_path}')
+            print(f"[WARN] MTCNN {net_name} 权重不存在: {weight_path}")
             continue
         state_dict = torch.load(weight_path, map_location=device)
         net = getattr(detector, net_name)
@@ -77,10 +94,11 @@ def load_mtcnn_weights_from_model_dir(detector: MTCNN, model_dir: Path, device: 
 
 def create_mtcnn_detector(model_dir: Path):
     # 创建 MTCNN 检测器。
+    # torch.hub 目录也指向 model_dir，避免模型权重散落到用户缓存目录。
     model_dir.mkdir(parents=True, exist_ok=True)
     torch.hub.set_dir(str(model_dir))
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    print(f'MTCNN using device: {device}')
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print(f"MTCNN using device: {device}")
     detector = MTCNN(keep_all=True, device=device)
     load_mtcnn_weights_from_model_dir(detector, model_dir, device)
     return detector
@@ -88,9 +106,9 @@ def create_mtcnn_detector(model_dir: Path):
 
 def create_face_landmarker(model_dir: Path):
     # 创建 MediaPipe Face Landmarker。
-    model_path = model_dir / 'face_landmarker.task'
+    model_path = model_dir / "face_landmarker.task"
     if not model_path.exists():
-        raise RuntimeError(f'未找到模型文件: {model_path}')
+        raise RuntimeError(f"未找到模型文件: {model_path}")
 
     options = vision.FaceLandmarkerOptions(
         base_options=mp_python.BaseOptions(model_asset_path=str(model_path)),
@@ -104,6 +122,7 @@ def create_face_landmarker(model_dir: Path):
 
 def boxes_from_landmarks(landmarks, w: int, h: int, flipped: bool):
     # 从单张人脸关键点生成左右眼独立框。
+    # flipped=True 表示输入图是镜像图，需要把 x 坐标映射回原图坐标系。
     def build(indices):
         xs = [int((1.0 - landmarks[i].x) * w) if flipped else int(landmarks[i].x * w) for i in indices]
         ys = [int(landmarks[i].y * h) for i in indices]
@@ -139,7 +158,7 @@ def boxes_from_landmarks(landmarks, w: int, h: int, flipped: bool):
     return []
 
 
-def detect_with_landmarker(image, landmarker):
+def landmarker_boxes(image, landmarker: vision.FaceLandmarker):
     # MediaPipe 主流程：先原图检测，失败后再尝试镜像图。
     h, w = image.shape[:2]
     max_eye_idx = max(max(LEFT_EYE_INDICES), max(RIGHT_EYE_INDICES))
@@ -169,7 +188,7 @@ def pick_best_mtcnn_face(image, mtcnn_detector):
         return None
 
     best_idx = -1
-    best_prob = float('-inf')
+    best_prob = float("-inf")
     for idx in range(len(boxes)):
         prob = float(probs[idx]) if probs is not None else 0.0
         if prob > best_prob:
@@ -206,8 +225,18 @@ def mtcnn_landmarks_reliable(landmarks, face_box) -> bool:
     return True
 
 
+def mtcnn_boxes(image, mtcnn_detector, force_single_profile_box: bool = False):
+    # 兼容旧接口：内部转调 detect_with_mtcnn。
+    return detect_with_mtcnn(
+        image=image,
+        mtcnn_detector=mtcnn_detector,
+        force_single_profile_box=force_single_profile_box,
+    )
+
+
 def detect_with_mtcnn(image, mtcnn_detector, force_single_profile_box: bool = False):
     # MTCNN 兜底：输出 1~2 个眼罩框。
+    # 规则：正/轻侧脸时输出双眼框；强侧脸时输出单眼框，尽量避免遮到鼻梁。
     results = []
     picked = pick_best_mtcnn_face(image, mtcnn_detector)
     if picked is None:
@@ -283,18 +312,134 @@ def detect_with_mtcnn(image, mtcnn_detector, force_single_profile_box: bool = Fa
 
 def detect_eye_mask_boxes(image, image_path: Path, landmarker, mtcnn_detector):
     # 统一入口：MediaPipe 优先，失败后 MTCNN 兜底。
-    boxes = detect_with_landmarker(image, landmarker)
+    # 返回 (boxes, source)，source 用于日志区分来自哪个检测器。
+    boxes = landmarker_boxes(image, landmarker)
     if boxes:
-        return boxes, 'ok_mp'
+        return boxes, "ok_mp"
 
     # 4/5 号位通常是侧脸，只保留单眼框。
-    force_single_profile_box = image_path.stem in {'4', '5'}
-    boxes = detect_with_mtcnn(
-        image=image,
-        mtcnn_detector=mtcnn_detector,
-        force_single_profile_box=force_single_profile_box,
-    )
+    force_single_profile_box = image_path.stem in {"4", "5"}
+    boxes = detect_with_mtcnn(image, mtcnn_detector, force_single_profile_box=force_single_profile_box)
     if boxes:
-        return boxes, 'ok_mtcnn'
+        return boxes, "ok_mtcnn"
 
-    return [], 'no_face'
+    return [], "no_face"
+
+
+def semantic_boxes_from_landmarks(landmarks, w: int, h: int, flipped: bool):
+    # 从单张人脸关键点生成语义框（眼睛/鼻子/嘴巴）。
+    mapping = {
+        "left_eye": LEFT_EYE_INDICES,
+        "right_eye": RIGHT_EYE_INDICES,
+        "nose": NOSE_INDICES,
+        "mouth": MOUTH_INDICES,
+    }
+    labeled_boxes = {}
+    for label, indices in mapping.items():
+        xs = [int((1.0 - landmarks[i].x) * w) if flipped else int(landmarks[i].x * w) for i in indices]
+        ys = [int(landmarks[i].y * h) for i in indices]
+        box = safe_box(min(xs), min(ys), max(xs), max(ys), w, h)
+        if box is not None:
+            labeled_boxes[label] = box
+    return labeled_boxes
+
+
+def detect_semantic_boxes(image, landmarker, mtcnn_detector):
+    """
+    输出语义框（眼睛/鼻子/嘴巴）用于可视化检测能力。
+    返回:
+      detections: [{label, box, source}, ...]
+      source: ok_mp / ok_mtcnn / no_face
+    """
+    h, w = image.shape[:2]
+    max_sem_idx = max(max(LEFT_EYE_INDICES), max(RIGHT_EYE_INDICES), max(NOSE_INDICES), max(MOUTH_INDICES))
+
+    # 1) MediaPipe 优先（语义信息最完整）
+    def try_landmarker(img, flipped: bool):
+        rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        result = landmarker.detect(mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb))
+        if not result.face_landmarks:
+            return {}
+        landmarks = result.face_landmarks[0]
+        if len(landmarks) <= max_sem_idx:
+            return {}
+        return semantic_boxes_from_landmarks(landmarks, w, h, flipped)
+
+    labeled = try_landmarker(image, flipped=False)
+    if not labeled:
+        labeled = try_landmarker(cv2.flip(image, 1), flipped=True)
+    if labeled:
+        return [
+            {"label": label, "box": box, "source": "MediaPipe"}
+            for label, box in labeled.items()
+        ], "ok_mp"
+
+    # 2) MTCNN 兜底（只含 5 点关键点，语义框会更粗略）
+    picked = pick_best_mtcnn_face(image, mtcnn_detector)
+    if picked is None:
+        return [], "no_face"
+
+    face_box, landmarks = picked
+    if not mtcnn_landmarks_reliable(landmarks, face_box):
+        return [], "no_face"
+
+    fx1, fy1, fx2, fy2 = face_box
+    face_w = max(1.0, fx2 - fx1)
+    face_h = max(1.0, fy2 - fy1)
+    detections = []
+
+    left_eye = landmarks[0]
+    right_eye = landmarks[1]
+    eye_half_w = int(max(face_w * MTCNN_EYE_W_FACE_RATIO, abs(left_eye[0] - right_eye[0]) * MTCNN_EYE_W_DX_RATIO))
+    eye_half_h = int(face_h * MTCNN_EYE_H_FACE_RATIO)
+
+    left_eye_box = safe_box(
+        int(left_eye[0] - eye_half_w),
+        int(left_eye[1] - eye_half_h),
+        int(left_eye[0] + eye_half_w),
+        int(left_eye[1] + eye_half_h),
+        w,
+        h,
+    )
+    right_eye_box = safe_box(
+        int(right_eye[0] - eye_half_w),
+        int(right_eye[1] - eye_half_h),
+        int(right_eye[0] + eye_half_w),
+        int(right_eye[1] + eye_half_h),
+        w,
+        h,
+    )
+    if left_eye_box is not None:
+        detections.append({"label": "left_eye", "box": left_eye_box, "source": "MTCNN"})
+    if right_eye_box is not None:
+        detections.append({"label": "right_eye", "box": right_eye_box, "source": "MTCNN"})
+
+    if len(landmarks) > 2:
+        nose = landmarks[2]
+        nose_half_w = int(face_w * 0.08)
+        nose_half_h = int(face_h * 0.10)
+        nose_box = safe_box(
+            int(nose[0] - nose_half_w),
+            int(nose[1] - nose_half_h),
+            int(nose[0] + nose_half_w),
+            int(nose[1] + nose_half_h),
+            w,
+            h,
+        )
+        if nose_box is not None:
+            detections.append({"label": "nose", "box": nose_box, "source": "MTCNN"})
+
+    if len(landmarks) > 4:
+        mouth_l = landmarks[3]
+        mouth_r = landmarks[4]
+        x1 = int(min(mouth_l[0], mouth_r[0]) - face_w * 0.08)
+        y1 = int(min(mouth_l[1], mouth_r[1]) - face_h * 0.08)
+        x2 = int(max(mouth_l[0], mouth_r[0]) + face_w * 0.08)
+        y2 = int(max(mouth_l[1], mouth_r[1]) + face_h * 0.10)
+        mouth_box = safe_box(x1, y1, x2, y2, w, h)
+        if mouth_box is not None:
+            detections.append({"label": "mouth", "box": mouth_box, "source": "MTCNN"})
+
+    if detections:
+        return detections, "ok_mtcnn"
+    return [], "no_face"
