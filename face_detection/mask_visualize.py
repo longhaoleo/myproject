@@ -15,6 +15,7 @@ LABEL_COLORS = {
 
 
 def draw_detection_preview(image, detections, status_text: str = ""):
+    """画语义框预览图（眼/鼻/嘴），用于检查定位效果。"""
     # 在图片上画语义框和标签，输出一张调试预览图。
     canvas = image.copy()
 

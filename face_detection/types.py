@@ -25,6 +25,8 @@ class FaceDetection:
     score: float | None = None
     # 统一关键点语义名称：left_eye / right_eye / nose / mouth_left / mouth_right
     landmarks: dict[str, LandmarkPoint] = field(default_factory=dict)
+    # 视角编号（例如 "1"~"6"），可用于按视角调整部位框大小
+    view_id: str | None = None
 
 
 class FaceDetector(Protocol):
@@ -40,8 +42,9 @@ class FaceDetector(Protocol):
     detector_name: str
 
     def detect(self, image: np.ndarray) -> list[FaceDetection]:
+        """执行检测并返回人脸列表。"""
         ...
 
     def close(self) -> None:
+        """释放资源（可选实现）。"""
         ...
-

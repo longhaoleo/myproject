@@ -6,17 +6,21 @@
 - 每张图画人脸框、置信度和关键点（若模型提供）。
 """
 
-import random
 from pathlib import Path
+import time
+from typing import Any
 
 import cv2
 
-from .dataset_utils import iter_images, sort_key
+from .dataset_utils import iter_images, pick_random_groups, sort_key
 from .factory import create_face_detector, supported_detector_names
+from .segmentation import FaceSegmenter, create_face_segmenter
+from .settings import default_detector_options, default_min_confidence_map, default_paths
 from .visualize import draw_face_detections
 
 
 def _format_faces(detections) -> str:
+    """把检测框列表格式化成易读字符串。"""
     # 日志用：输出简短框坐标。
     if not detections:
         return "[]"
@@ -24,50 +28,13 @@ def _format_faces(detections) -> str:
     return "[" + ", ".join(boxes) + "]"
 
 
-def _person_group_name(path: Path, root: Path) -> str:
-    # 约定第一层子目录为“组”（例如 deformity/68/... -> 组名 68）。
-    rel = path.relative_to(root)
-    return rel.parts[0] if rel.parts else ""
-
-
-def _group_sort_key(name: str):
-    # 组名自然排序：纯数字按数值，其余按文本。
-    return (0, int(name)) if name.isdigit() else (1, name.lower())
-
-
-def pick_random_groups(
-    image_paths: list[Path],
-    input_root: Path,
-    random_group_count: int,
-    random_seed: int,
-) -> tuple[list[Path], list[str], int]:
-    """
-    从所有组中随机抽样若干组，只返回这些组内的图片。
-
-    返回：
-    - sampled_paths: 抽样后的图片列表（保留原有排序）
-    - selected_groups: 抽中的组名（已排序，便于日志查看）
-    - total_groups: 输入目录中可用组总数
-    """
-    groups: set[str] = set()
-    for path in image_paths:
-        group = _person_group_name(path, input_root)
-        if group:
-            groups.add(group)
-    total_groups = len(groups)
-    if random_group_count <= 0 or random_group_count >= total_groups:
-        all_groups = sorted(groups, key=_group_sort_key)
-        return image_paths, all_groups, total_groups
-
-    rng = random.Random(random_seed)
-    selected_groups = rng.sample(list(groups), k=random_group_count)
-    selected_set = set(selected_groups)
-
-    sampled_paths = [
-        path for path in image_paths if _person_group_name(path, input_root) in selected_set
-    ]
-    selected_groups = sorted(selected_groups, key=_group_sort_key)
-    return sampled_paths, selected_groups, total_groups
+def _write_lines(file_path: Path, lines: list[str]) -> None:
+    """把文本行写入文件。"""
+    # 把文本行写入文件。
+    file_path.parent.mkdir(parents=True, exist_ok=True)
+    with file_path.open("w", encoding="utf-8") as f:
+        for line in lines:
+            f.write(line + "\n")
 
 
 def run_one_detector(
@@ -77,17 +44,21 @@ def run_one_detector(
     output_root: Path,
     model_dir: Path,
     min_confidence: float,
-    yolov8_model_path: Path | None,
+    detector_options: dict[str, Any] | None,
+    segmenter: FaceSegmenter,
     draw_landmarks: bool,
     draw_part_boxes: bool,
+    draw_segmentation_masks: bool,
+    draw_segmentation_parts: bool,
     print_box_info: bool,
 ):
-    # 运行单个检测器并输出可视化结果。
+    """运行单个检测器并输出可视化结果。"""
+    # 每次仅实例化一个检测器，避免多模型同时占用内存。
     detector = create_face_detector(
         detector_name=detector_name,
         model_dir=model_dir,
         min_confidence=min_confidence,
-        yolov8_model_path=yolov8_model_path,
+        detector_options=detector_options,
     )
 
     ok_count = 0
@@ -98,8 +69,10 @@ def run_one_detector(
     detector_key = detector_name.lower().replace("_", "-")
     detector_output_root = output_root / detector_key
 
+    detector_start = time.perf_counter()
     try:
         for image_path in image_paths:
+            rel_path = image_path.relative_to(input_root)
             image = cv2.imread(str(image_path))
             if image is None:
                 read_failed_count += 1
@@ -113,11 +86,30 @@ def run_one_detector(
                 print(f"[{detector_name}] 跳过(推理失败): {image_path} | {exc}")
                 continue
 
+            # 分割接口：开启后使用 SAM 对每张脸生成 mask（关闭则完全不影响检测流程）。
+            segmentation_masks = [None for _ in detections]
+            if draw_segmentation_masks and detections:
+                try:
+                    segmentation_masks = segmenter.segment(
+                        image=image,
+                        detections=detections,
+                    )
+                    # 如果需要查看“按部位分割”效果，优先使用分割器产出的部位 mask。
+                    if draw_segmentation_parts and hasattr(segmenter, "last_part_masks"):
+                        part_masks = getattr(segmenter, "last_part_masks", None)
+                        if isinstance(part_masks, list) and len(part_masks) == len(detections):
+                            segmentation_masks = part_masks
+                except Exception as exc:
+                    print(f"[{detector_name}] 分割失败，已退化为仅画框: {image_path} | {exc}")
+                    segmentation_masks = [None for _ in detections]
+
             if detections:
                 ok_count += 1
             else:
                 no_face_count += 1
+                print(f"[{detector_name}] 未检测到人脸: {image_path}")
 
+            # 可视化层：框 + 关键点 +（可选）部位框 +（可选）分割叠加。
             vis = draw_face_detections(
                 image=image,
                 detections=detections,
@@ -125,9 +117,10 @@ def run_one_detector(
                 status_text=f"faces={len(detections)}",
                 draw_landmarks=draw_landmarks,
                 draw_part_boxes=draw_part_boxes,
+                segmentation_masks=segmentation_masks,
             )
 
-            output_path = detector_output_root / image_path.relative_to(input_root)
+            output_path = detector_output_root / rel_path
             output_path.parent.mkdir(parents=True, exist_ok=True)
             cv2.imwrite(str(output_path), vis)
 
@@ -137,53 +130,68 @@ def run_one_detector(
     finally:
         detector.close()
 
-    print(
-        f"[{detector_name}] 完成：检测到人脸 {ok_count} 张，"
-        f"未检测到人脸 {no_face_count} 张，读取失败 {read_failed_count} 张，"
-        f"推理失败 {infer_failed_count} 张。"
-    )
+    elapsed = time.perf_counter() - detector_start
+    print(f"[{detector_name}] 完成：检测到人脸 {ok_count} 张，耗时 {elapsed:.2f}s。")
+    print(f"[{detector_name}] 未检测到人脸 {no_face_count} 张。")
+    print(f"[{detector_name}] 读取失败 {read_failed_count} 张。")
+    print(f"[{detector_name}] 推理失败 {infer_failed_count} 张。")
+    return {
+        "detector": detector_name,
+        "elapsed_seconds": elapsed,
+        "ok_count": ok_count,
+        "no_face_count": no_face_count,
+        "read_failed_count": read_failed_count,
+        "infer_failed_count": infer_failed_count,
+    }
 
 
 def main():
-    # 输入图片根目录
-    input_root = Path("~/datasets/deformity").expanduser().resolve()
+    """批量运行多个检测器并输出对比结果。"""
+    # 输入/输出/模型路径（集中管理）
+    paths = default_paths()
+    input_root = paths.input_root
+    output_root = paths.output_root_detect
+    model_dir = paths.model_dir
 
-    # 可视化输出根目录（每个检测器一个子目录）
-    output_root = Path("~/datasets/deformity_face_detection_preview").expanduser().resolve()
-
-    # 模型目录（缓存 + 本地权重）
-    model_dir = Path(__file__).resolve().parent.parent / "model"
-
-    # 要运行的检测器列表（按顺序执行）
+    # 要运行的检测器列表（按顺序执行，便于横向比较）
     detectors_to_run = [
-        # "mtcnn",
         # "retinaface",
+        # "mtcnn",
         # "scrfd",
         # "blazeface",
         # "mediapipe-landmarker",
         # "yolov8-face",
-        "centerface",
+        # "centerface",
     ]
 
-    # 每个检测器置信度阈值（未列出的用默认值）
+    # 每个检测器置信度阈值
     default_min_confidence = 0.5
-    min_confidence_map = {
-        "mtcnn": 0.7,
-        "retinaface": 0.6,
-        "scrfd": 0.6,
-        "blazeface": 0.5,
-        "mediapipe-landmarker": 0.3,
-        "yolov8-face": 0.4,
-        "centerface": 0.5,
-    }
+    min_confidence_map = default_min_confidence_map()
 
-    # YOLOv8-Face（改造版）权重路径
-    yolov8_model_path = model_dir / "yolov8_face.pt"
+    # 检测器专属参数（通用扩展入口）
+    # 后续新增检测器时，优先在这里加参数，不要再添加“单独函数参数”。
+    detector_options_map: dict[str, dict[str, Any]] = default_detector_options(model_dir)
+
+    # 分割接口开关（默认关闭，不影响现有检测流程）
+    enable_segmentation_refine = False
+    segmenter_name = "mobile-sam"
+    segmenter_options: dict[str, Any] = {
+        # 轻量 SAM 权重默认位置
+        "model_path": str(model_dir / "sam" / "mobile_sam.pt"),
+        # MobileSAM 一般使用 vit_t
+        "model_type": "vit_t",
+        # part_names 决定“按部位分割”时会提示哪些区域
+        "part_names": ("face", "left_eye", "right_eye", "nose", "mouth"),
+    }
 
     # 是否绘制关键点（模型不提供时会自动跳过）
     draw_landmarks = True
     # 是否绘制眼睛/鼻子/嘴巴部位框（依赖关键点）
     draw_part_boxes = True
+    # 是否绘制分割 mask（需要 enable_segmentation_refine=True）
+    draw_segmentation_masks = False
+    # 是否按部位显示分割（face/eyes/nose/mouth 分别着色）
+    draw_segmentation_parts = False
     # 是否打印每张图的人脸框坐标
     print_box_info = False
 
@@ -200,7 +208,7 @@ def main():
 
     image_paths, selected_groups, total_groups = pick_random_groups(
         image_paths=image_paths,
-        input_root=input_root,
+        root=input_root,
         random_group_count=random_group_count,
         random_seed=random_seed,
     )
@@ -217,24 +225,68 @@ def main():
     print("支持的检测器:", ", ".join(supported_detector_names()))
     print("本次运行检测器:", ", ".join(detectors_to_run))
 
-    for detector_name in detectors_to_run:
-        min_conf = min_confidence_map.get(detector_name, default_min_confidence)
-        try:
-            run_one_detector(
-                detector_name=detector_name,
-                image_paths=image_paths,
-                input_root=input_root,
-                output_root=output_root,
-                model_dir=model_dir,
-                min_confidence=min_conf,
-                yolov8_model_path=yolov8_model_path,
-                draw_landmarks=draw_landmarks,
-                draw_part_boxes=draw_part_boxes,
-                print_box_info=print_box_info,
-            )
-        except Exception as exc:
-            print(f"[{detector_name}] 初始化或运行失败: {exc}")
-            print(f"[{detector_name}] 已跳过，继续下一个检测器。")
+    # 创建全局分割器：如果关闭分割，就走 Noop，不会改变现有行为。
+    segmenter = create_face_segmenter(
+        segmenter_name=segmenter_name if enable_segmentation_refine else "none",
+        model_dir=model_dir,
+        segmenter_options=segmenter_options,
+    )
+
+    total_start = time.perf_counter()
+    stats_by_detector: list[dict[str, float | int | str]] = []
+
+    try:
+        for detector_name in detectors_to_run:
+            min_conf = min_confidence_map.get(detector_name, default_min_confidence)
+            detector_options = detector_options_map.get(detector_name)
+            try:
+                stats = run_one_detector(
+                    detector_name=detector_name,
+                    image_paths=image_paths,
+                    input_root=input_root,
+                    output_root=output_root,
+                    model_dir=model_dir,
+                    min_confidence=min_conf,
+                    detector_options=detector_options,
+                    segmenter=segmenter,
+                    draw_landmarks=draw_landmarks,
+                    draw_part_boxes=draw_part_boxes,
+                    draw_segmentation_masks=draw_segmentation_masks,
+                    draw_segmentation_parts=draw_segmentation_parts,
+                    print_box_info=print_box_info,
+                )
+                stats_by_detector.append(stats)
+            except Exception as exc:
+                print(f"[{detector_name}] 初始化或运行失败: {exc}")
+                print(f"[{detector_name}] 已跳过，继续下一个检测器。")
+    finally:
+        segmenter.close()
+
+    total_elapsed = time.perf_counter() - total_start
+    print("\n=== 运行耗时统计 ===")
+    print(f"图片总数: {len(image_paths)}")
+    print(f"检测器数量: {len(detectors_to_run)}")
+    print(f"总耗时: {total_elapsed:.2f}s")
+    if image_paths:
+        print(f"平均每张图片耗时(总耗时/图片数): {total_elapsed / len(image_paths):.4f}s")
+    for item in stats_by_detector:
+        name = str(item["detector"])
+        print(f"- {name}: {float(item['elapsed_seconds']):.2f}s")
+    print("="*12)
+
+    run_stats_root = output_root / "_run_stats"
+    # 每个模型的最终时间与漏检/失败统计
+    summary_lines = []
+    for item in stats_by_detector:
+        summary_lines.append(
+            f"{item['detector']}\t"
+            f"elapsed={float(item['elapsed_seconds']):.6f}\t"
+            f"ok={int(item['ok_count'])}\t"
+            f"no_face={int(item['no_face_count'])}\t"
+            f"read_failed={int(item['read_failed_count'])}\t"
+            f"infer_failed={int(item['infer_failed_count'])}"
+        )
+    _write_lines(run_stats_root / "detect_compare_summary.txt", summary_lines)
 
 
 if __name__ == "__main__":

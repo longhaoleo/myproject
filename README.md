@@ -1,74 +1,41 @@
 # 眼部遮挡与多模型人脸检测
 
-本项目有两个主流程，统一入口是 `face_detection_batch.py`：
+项目统一入口是 `face_detection_batch.py`，支持三种模式：
 
-1. `detect_compare`：人脸检测可视化对比（多检测器）
-2. `eye_mask`：眼部黑条打码
+1. `detect_compare`：多检测器可视化对比
+2. `eye_mask`：根据检测框直接眼部打码
+3. `sam_mask`：检测框/关键点 + SAM 分割
 
-详细模型下载与放置路径见：
+更详细的模型下载、放置路径、各检测器加载方式见 [face_detection/README.md](face_detection/README.md)。
 
-- `face_detection/README.md`
-- 其中“所有检测器的加载方式（逐个说明）”章节包含每个检测器的导入、权重路径和加载逻辑
-
----
-
-## 1. 快速开始
+## 快速开始
 
 ```bash
-cd /home/leo/myproject
-pip install -r requirements.txt
-pip install -r requirements-detectors.txt
-```
-
-运行：
-
-```bash
+cd ~/myproject
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
 python face_detection_batch.py
 ```
 
-在 `face_detection_batch.py` 中改 `RUN_MODE`：
+建议使用 `Python 3.10`，并保证“运行脚本的 python”和“安装依赖的 python”是同一个环境。
+
+在 `face_detection_batch.py` 中修改：
 
 - `RUN_MODE = "detect_compare"`
 - `RUN_MODE = "eye_mask"`
+- `RUN_MODE = "sam_mask"`
 
----
+在 notebook 里不需要专门接口，直接调用现有模块：
 
-## 2. 检测对比说明
+```python
+from face_detection.batch import main as run_detect_compare
+from face_detection.masking import main as run_eye_mask
+from face_detection.sam_mask import main as run_sam_mask
 
-检测流程主文件：`face_detection/batch.py`
+run_detect_compare()  # 或 run_eye_mask() / run_sam_mask()
+```
 
-关键配置：
+## 说明
 
-- `detectors_to_run`：本次要跑哪些检测器
-- `min_confidence_map`：每个检测器阈值
-- `random_group_count`：随机抽样组数（0 表示全量）
-- `draw_landmarks` / `draw_part_boxes`：可视化开关
-
-当前支持检测器名：
-
-- `mtcnn`
-- `retinaface`
-- `scrfd`
-- `blazeface`
-- `mediapipe-landmarker`
-- `yolov8-face`
-- `centerface`
-
-输出目录按检测器分子目录，且保留原始数据树。
-
----
-
-## 3. 关键模型说明
-
-- `blazeface`：MediaPipe FaceDetection（速度快，关键点少）
-- `mediapipe-landmarker`：MediaPipe FaceLandmarker（468 点，更细粒度）
-- `yolov8-face`：当前建议使用带 5 点关键点的权重（详见 `face_detection/README.md` 的下载与验证命令）
-- `centerface`：已改为直接加载本地 ONNX（`model/centerface/centerface.onnx`），不需要 `pip install centerface`
-
----
-
-## 4. 常见问题
-
-1. `ModuleNotFoundError`：确认运行脚本的 Python 和安装依赖的 Python 是同一个环境。
-2. BlazeFace 报 `RET_CHECK ... dims[1]==num_boxes_`：请使用 `blaze_face_short_range.tflite`，不要用旧的 `face_detection_*.tflite`。
-3. 单个检测器初始化失败：脚本会跳过并继续跑下一个，终端会打印具体异常。
+- 当前 `requirements.txt` 已按单环境可安装整理（MediaPipe + TensorFlow 2.15 兼容）。
+- 模型文件默认放在项目根目录 `model/`，并按检测器分子目录。

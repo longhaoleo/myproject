@@ -10,12 +10,13 @@
 """
 
 from .factory import create_face_detector, supported_detector_names
+from .segmentation import create_face_segmenter
 from .types import FaceDetection, FaceDetector
 
 __all__ = [
     "FaceDetection",
     "FaceDetector",
     "create_face_detector",
+    "create_face_segmenter",
     "supported_detector_names",
 ]
-

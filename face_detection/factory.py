@@ -3,6 +3,7 @@
 """
 
 from pathlib import Path
+from typing import Any
 
 from .backends import (
     BlazeFaceDetector,
@@ -16,10 +17,14 @@ from .backends import (
 
 
 def _normalize_name(name: str) -> str:
+    """标准化 detector 名称，便于匹配别名。"""
+    # 统一命名：下划线与大小写都归一，便于命中别名。
     return name.strip().lower().replace("_", "-")
 
 
 def supported_detector_names() -> list[str]:
+    """返回支持的检测器名称列表（含别名）。"""
+    # 对外展示所有支持的 detector 名称（含别名）。
     return [
         "mtcnn",
         "retinaface",
@@ -37,18 +42,12 @@ def create_face_detector(
     detector_name: str,
     model_dir: Path,
     min_confidence: float = 0.5,
-    yolov8_model_path: Path | None = None,
+    detector_options: dict[str, Any] | None = None,
 ):
-    """
-    创建检测器实例。
-
-    参数：
-    - detector_name: 检测器名称
-    - model_dir: 模型目录（缓存和本地权重）
-    - min_confidence: 置信度阈值
-    - yolov8_model_path: YOLOv8-Face（改造版）权重路径
-    """
+    """创建检测器实例（统一入口）。"""
+    # 统一归一化名称后再做分发。
     key = _normalize_name(detector_name)
+    options = detector_options or {}
 
     if key == "mtcnn":
         return MTCNNDetector(model_dir=model_dir, min_confidence=min_confidence)
@@ -57,7 +56,18 @@ def create_face_detector(
         return RetinaFaceDetector(model_dir=model_dir, min_confidence=min_confidence)
 
     if key == "scrfd":
-        return SCRFDDetector(model_dir=model_dir, min_confidence=min_confidence)
+        # SCRFD 常用可调项：输入尺寸 det_size。
+        det_size = options.get("det_size", (640, 640))
+        if (
+            not isinstance(det_size, (list, tuple))
+            or len(det_size) != 2
+        ):
+            raise ValueError(f"scrfd.det_size 参数非法: {det_size}")
+        return SCRFDDetector(
+            model_dir=model_dir,
+            min_confidence=min_confidence,
+            det_size=(int(det_size[0]), int(det_size[1])),
+        )
 
     if key == "blazeface":
         return BlazeFaceDetector(model_dir=model_dir, min_confidence=min_confidence)
@@ -66,9 +76,19 @@ def create_face_detector(
         return MediaPipeLandmarkerDetector(model_dir=model_dir, min_confidence=min_confidence)
 
     if key in {"yolov8-face", "yolov8face", "yolov8-face-mod"}:
-        if yolov8_model_path is None:
-            yolov8_model_path = model_dir / "yolov8_face.pt"
-        return YoloV8FaceDetector(model_path=yolov8_model_path, min_confidence=min_confidence)
+        # YOLOv8-Face 可调项：模型路径和关键点阈值。
+        model_path_opt = options.get("model_path")
+        model_path = (
+            Path(model_path_opt)
+            if model_path_opt is not None
+            else model_dir / "yolov8-face" / "yolov8_face.pt"
+        )
+        keypoint_confidence = float(options.get("keypoint_confidence", 0.2))
+        return YoloV8FaceDetector(
+            model_path=model_path,
+            min_confidence=min_confidence,
+            keypoint_confidence=keypoint_confidence,
+        )
 
     if key == "centerface":
         return CenterFaceDetector(model_dir=model_dir, min_confidence=min_confidence)

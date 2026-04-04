@@ -22,6 +22,7 @@ from .types import FaceDetection
 
 
 def _clip_box(x1: float, y1: float, x2: float, y2: float, w: int, h: int):
+    """裁剪框到图像边界并返回 int 坐标。"""
     # 把框裁剪到图像边界内，并转为 int。
     ix1 = max(0, min(w - 1, int(round(x1))))
     iy1 = max(0, min(h - 1, int(round(y1))))
@@ -33,6 +34,7 @@ def _clip_box(x1: float, y1: float, x2: float, y2: float, w: int, h: int):
 
 
 def _clip_point(x: float, y: float, w: int, h: int):
+    """裁剪关键点到图像边界。"""
     # 把关键点裁剪到图像边界内。
     ix = max(0, min(w - 1, int(round(x))))
     iy = max(0, min(h - 1, int(round(y))))
@@ -40,6 +42,7 @@ def _clip_point(x: float, y: float, w: int, h: int):
 
 
 def _as_float(value, default: float = 0.0) -> float:
+    """安全转 float，失败返回默认值。"""
     try:
         return float(value)
     except Exception:
@@ -47,10 +50,7 @@ def _as_float(value, default: float = 0.0) -> float:
 
 
 def _yolo_class_is_face(names, cls_arr, i: int) -> bool:
-    """
-    多类别 YOLO 情况下，仅保留类别名含 face 的框。
-    单类别模型默认通过。
-    """
+    """YOLO 多类别时仅保留 face 类别。"""
     if not isinstance(names, dict) or len(names) == 0:
         return True
     class_id = int(cls_arr[i]) if i < len(cls_arr) else 0
@@ -78,6 +78,7 @@ class BaseDetector:
     detector_name: str
 
     def close(self) -> None:
+        """释放资源（多数后端无需显式释放）。"""
         # 多数 Python 后端无需显式释放，保留统一接口。
         return None
 
@@ -86,6 +87,7 @@ class MTCNNDetector(BaseDetector):
     """facenet-pytorch MTCNN。"""
 
     def __init__(self, model_dir: Path, min_confidence: float = 0.6):
+        """初始化 MTCNN，并设置置信度阈值。"""
         super().__init__(detector_name="MTCNN")
         try:
             import torch
@@ -94,12 +96,14 @@ class MTCNNDetector(BaseDetector):
             raise ImportError("MTCNN 需要安装 torch 与 facenet-pytorch。") from exc
 
         self.min_confidence = float(min_confidence)
-        model_dir.mkdir(parents=True, exist_ok=True)
-        torch.hub.set_dir(str(model_dir))
+        mtcnn_dir = model_dir / "mtcnn"
+        mtcnn_dir.mkdir(parents=True, exist_ok=True)
+        torch.hub.set_dir(str(mtcnn_dir))
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self._model = MTCNN(keep_all=True, device=device)
 
     def detect(self, image: np.ndarray) -> list[FaceDetection]:
+        """返回检测到的人脸框与 5 点关键点。"""
         h, w = image.shape[:2]
         rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         boxes, probs, landmarks = self._model.detect(rgb, landmarks=True)
@@ -131,6 +135,7 @@ class RetinaFaceDetector(BaseDetector):
     """RetinaFace（pip 包名：retina-face；导入名：retinaface）。"""
 
     def __init__(self, model_dir: Path, min_confidence: float = 0.6):
+        """初始化 RetinaFace，并设置权重目录映射。"""
         super().__init__(detector_name="RetinaFace")
         try:
             from retinaface import RetinaFace
@@ -138,14 +143,14 @@ class RetinaFaceDetector(BaseDetector):
             raise ImportError("RetinaFace 需要安装 retina-face（导入名为 retinaface）。") from exc
 
         self.min_confidence = float(min_confidence)
-        self.model_dir = model_dir
+        self.model_dir = model_dir / "retinaface"
         self.model_dir.mkdir(parents=True, exist_ok=True)
 
         # RetinaFace 读取路径固定为: <DEEPFACE_HOME>/.deepface/weights/retinaface.h5
-        # 这里把 DEEPFACE_HOME 指向项目 model 目录，避免写到用户主目录。
+        # 这里把 DEEPFACE_HOME 指向 model/retinaface，避免散落到其他目录。
         os.environ["DEEPFACE_HOME"] = str(self.model_dir.resolve())
 
-        # 若用户把权重放在 model/retinaface.h5，则自动链接/复制到 RetinaFace 默认读取路径。
+        # 权重放在 model/retinaface/retinaface.h5。
         local_weight = self.model_dir / "retinaface.h5"
         expected_weight = self.model_dir / ".deepface" / "weights" / "retinaface.h5"
         expected_weight.parent.mkdir(parents=True, exist_ok=True)
@@ -158,6 +163,7 @@ class RetinaFaceDetector(BaseDetector):
         self._retina = RetinaFace
 
     def detect(self, image: np.ndarray) -> list[FaceDetection]:
+        """返回检测到的人脸框与关键点。"""
         h, w = image.shape[:2]
         raw = self._retina.detect_faces(image)
         if raw is None:
@@ -202,6 +208,7 @@ class SCRFDDetector(BaseDetector):
     """SCRFD（insightface FaceAnalysis）。"""
 
     def __init__(self, model_dir: Path, min_confidence: float = 0.6, det_size: tuple[int, int] = (640, 640)):
+        """初始化 SCRFD（FaceAnalysis），可指定输入尺寸。"""
         super().__init__(detector_name="SCRFD")
         try:
             import torch
@@ -214,12 +221,13 @@ class SCRFDDetector(BaseDetector):
         if torch.cuda.is_available():
             providers = ["CUDAExecutionProvider", "CPUExecutionProvider"]
 
-        root = model_dir / "insightface"
+        root = model_dir / "scrfd" / "insightface"
         root.mkdir(parents=True, exist_ok=True)
         self._app = FaceAnalysis(name="buffalo_l", root=str(root), providers=providers)
         self._app.prepare(ctx_id=0 if torch.cuda.is_available() else -1, det_size=det_size)
 
     def detect(self, image: np.ndarray) -> list[FaceDetection]:
+        """返回检测到的人脸框与 5 点关键点。"""
         h, w = image.shape[:2]
         faces = self._app.get(image)
         results: list[FaceDetection] = []
@@ -257,6 +265,7 @@ class BlazeFaceDetector(BaseDetector):
     """
 
     def __init__(self, model_dir: Path, min_confidence: float = 0.5):
+        """初始化 BlazeFace，优先使用 mediapipe solutions。"""
         super().__init__(detector_name="BlazeFace")
         try:
             import mediapipe as mp
@@ -334,12 +343,14 @@ class BlazeFaceDetector(BaseDetector):
         ) from last_error
 
     def close(self) -> None:
+        """关闭 mediapipe detector 资源。"""
         if self._legacy_detector is not None:
             self._legacy_detector.close()
         if self._task_detector is not None:
             self._task_detector.close()
 
     def _parse_tasks_keypoints(self, det, w: int, h: int) -> dict[str, tuple[int, int]]:
+        """解析 tasks 版关键点为统一语义名称。"""
         # tasks keypoints 可能包含 label，也可能只有顺序位置。
         lm_dict: dict[str, tuple[int, int]] = {}
         keypoints = getattr(det, "keypoints", None) or []
@@ -382,6 +393,7 @@ class BlazeFaceDetector(BaseDetector):
         return lm_dict
 
     def _detect_by_tasks(self, image: np.ndarray) -> list[FaceDetection]:
+        """使用 mediapipe tasks 版模型执行检测。"""
         h, w = image.shape[:2]
         rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         mp_image = self._mp.Image(image_format=self._mp.ImageFormat.SRGB, data=rgb)
@@ -415,6 +427,7 @@ class BlazeFaceDetector(BaseDetector):
         return results
 
     def detect(self, image: np.ndarray) -> list[FaceDetection]:
+        """检测入口：按当前后端分支执行。"""
         h, w = image.shape[:2]
         if self._backend == "tasks":
             return self._detect_by_tasks(image)
@@ -461,6 +474,7 @@ class MediaPipeLandmarkerDetector(BaseDetector):
     """
 
     def __init__(self, model_dir: Path, min_confidence: float = 0.3):
+        """初始化 FaceLandmarker（468 点）。"""
         super().__init__(detector_name="MediaPipe-Landmarker")
         try:
             import mediapipe as mp
@@ -480,7 +494,7 @@ class MediaPipeLandmarkerDetector(BaseDetector):
             MOUTH_RIGHT_INDEX,
         )
 
-        model_path = model_dir / "face_landmarker.task"
+        model_path = model_dir / "mediapipe-landmarker" / "face_landmarker.task"
         if not model_path.exists():
             raise FileNotFoundError(f"未找到 FaceLandmarker 模型: {model_path}")
 
@@ -496,11 +510,13 @@ class MediaPipeLandmarkerDetector(BaseDetector):
         self._landmarker = mp_vision.FaceLandmarker.create_from_options(options)
 
     def close(self) -> None:
+        """关闭 landmarker 资源。"""
         if self._landmarker is not None:
             self._landmarker.close()
 
     @staticmethod
     def _point_from_index(landmarks, idx: int, w: int, h: int):
+        """把单个关键点索引映射到像素坐标。"""
         if idx >= len(landmarks):
             return None
         px = int(round(float(landmarks[idx].x) * w))
@@ -509,6 +525,7 @@ class MediaPipeLandmarkerDetector(BaseDetector):
 
     @staticmethod
     def _center_from_indices(landmarks, indices: list[int], w: int, h: int):
+        """把多关键点取均值作为中心点。"""
         points: list[tuple[int, int]] = []
         for idx in indices:
             p = MediaPipeLandmarkerDetector._point_from_index(landmarks, idx, w, h)
@@ -522,6 +539,7 @@ class MediaPipeLandmarkerDetector(BaseDetector):
 
     @staticmethod
     def _face_box_from_landmarks(landmarks, w: int, h: int):
+        """根据 468 点外接矩形生成人脸框。"""
         xs = [int(round(float(p.x) * w)) for p in landmarks]
         ys = [int(round(float(p.y) * h)) for p in landmarks]
         if not xs or not ys:
@@ -529,6 +547,7 @@ class MediaPipeLandmarkerDetector(BaseDetector):
         return _clip_box(min(xs), min(ys), max(xs), max(ys), w, h)
 
     def detect(self, image: np.ndarray) -> list[FaceDetection]:
+        """返回检测到的人脸框与语义关键点。"""
         h, w = image.shape[:2]
         rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         mp_image = self._mp.Image(image_format=self._mp.ImageFormat.SRGB, data=rgb)
@@ -587,6 +606,7 @@ class YoloV8FaceDetector(BaseDetector):
         min_confidence: float = 0.4,
         keypoint_confidence: float = 0.2,
     ):
+        """初始化 YOLOv8-Face 模型与阈值。"""
         super().__init__(detector_name="YOLOv8-Face")
         try:
             from ultralytics import YOLO
@@ -601,6 +621,7 @@ class YoloV8FaceDetector(BaseDetector):
         self._model = YOLO(str(model_path))
 
     def detect(self, image: np.ndarray) -> list[FaceDetection]:
+        """返回检测到的人脸框与（可选）关键点。"""
         h, w = image.shape[:2]
         pred = self._model(image, verbose=False)[0]
         if pred.boxes is None or len(pred.boxes) == 0:
@@ -659,6 +680,7 @@ class CenterFaceDetector(BaseDetector):
     """CenterFace（本地 ONNX 版本，无需安装 centerface 包）。"""
 
     def __init__(self, model_dir: Path, min_confidence: float = 0.4):
+        """初始化 CenterFace ONNX 并设置阈值。"""
         super().__init__(detector_name="CenterFace")
         self.min_confidence = float(min_confidence)
         self.model_path = model_dir / "centerface" / "centerface.onnx"
@@ -668,6 +690,7 @@ class CenterFaceDetector(BaseDetector):
 
     @staticmethod
     def _transform(h: int, w: int):
+        """计算符合 32 对齐的输入尺寸与缩放比例。"""
         img_h_new = int(np.ceil(h / 32) * 32)
         img_w_new = int(np.ceil(w / 32) * 32)
         scale_h = img_h_new / h
@@ -676,6 +699,7 @@ class CenterFaceDetector(BaseDetector):
 
     @staticmethod
     def _nms(boxes: np.ndarray, scores: np.ndarray, nms_thresh: float):
+        """简单 NMS 过滤重叠框。"""
         x1 = boxes[:, 0]
         y1 = boxes[:, 1]
         x2 = boxes[:, 2]
@@ -713,6 +737,7 @@ class CenterFaceDetector(BaseDetector):
 
     @staticmethod
     def _decode(heatmap, scale, offset, landmark, size, threshold=0.1):
+        """解码 CenterFace 输出为框与关键点。"""
         heatmap = np.squeeze(heatmap)
         scale0, scale1 = scale[0, 0, :, :], scale[0, 1, :, :]
         offset0, offset1 = offset[0, 0, :, :], offset[0, 1, :, :]
@@ -750,6 +775,7 @@ class CenterFaceDetector(BaseDetector):
         return boxes_arr[keep, :], lms_arr[keep, :]
 
     def detect(self, image: np.ndarray) -> list[FaceDetection]:
+        """执行 CenterFace 检测并输出人脸框与 5 点关键点。"""
         h, w = image.shape[:2]
         img_h_new, img_w_new, scale_h, scale_w = self._transform(h, w)
 

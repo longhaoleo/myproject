@@ -48,6 +48,7 @@ MTCNN_PAD_H_RATIO = 0.16
 
 
 def safe_box(x1: int, y1: int, x2: int, y2: int, w: int, h: int):
+    """裁剪框到图像边界，非法则返回 None。"""
     # 裁剪到图像边界内，非法框返回 None。
     x1 = max(0, x1)
     y1 = max(0, y1)
@@ -59,6 +60,7 @@ def safe_box(x1: int, y1: int, x2: int, y2: int, w: int, h: int):
 
 
 def keep_gap_between_two_boxes(box_a, box_b, min_gap: int = 6):
+    """调整左右眼框，保证鼻梁中间留白。"""
     # 调整左右边界，确保中间留白，不遮鼻梁。
     ax1, ay1, ax2, ay2 = box_a
     bx1, by1, bx2, by2 = box_b
@@ -76,11 +78,12 @@ def keep_gap_between_two_boxes(box_a, box_b, min_gap: int = 6):
 
 
 def load_mtcnn_weights_from_model_dir(detector: MTCNN, model_dir: Path, device: torch.device) -> None:
+    """从 model 目录加载 MTCNN 的 pnet/rnet/onet 权重。"""
     # 从本地 model 目录加载 MTCNN 权重。
     weight_map = {
-        "pnet": model_dir / "pnet.pt",
-        "rnet": model_dir / "rnet.pt",
-        "onet": model_dir / "onet.pt",
+        "pnet": model_dir / "mtcnn" / "pnet.pt",
+        "rnet": model_dir / "mtcnn" / "rnet.pt",
+        "onet": model_dir / "mtcnn" / "onet.pt",
     }
     for net_name, weight_path in weight_map.items():
         if not weight_path.exists():
@@ -93,10 +96,12 @@ def load_mtcnn_weights_from_model_dir(detector: MTCNN, model_dir: Path, device: 
 
 
 def create_mtcnn_detector(model_dir: Path):
+    """创建 MTCNN 检测器并加载本地权重。"""
     # 创建 MTCNN 检测器。
     # torch.hub 目录也指向 model_dir，避免模型权重散落到用户缓存目录。
-    model_dir.mkdir(parents=True, exist_ok=True)
-    torch.hub.set_dir(str(model_dir))
+    mtcnn_dir = model_dir / "mtcnn"
+    mtcnn_dir.mkdir(parents=True, exist_ok=True)
+    torch.hub.set_dir(str(mtcnn_dir))
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"MTCNN using device: {device}")
     detector = MTCNN(keep_all=True, device=device)
@@ -105,8 +110,9 @@ def create_mtcnn_detector(model_dir: Path):
 
 
 def create_face_landmarker(model_dir: Path):
+    """创建 MediaPipe FaceLandmarker。"""
     # 创建 MediaPipe Face Landmarker。
-    model_path = model_dir / "face_landmarker.task"
+    model_path = model_dir / "mediapipe-landmarker" / "face_landmarker.task"
     if not model_path.exists():
         raise RuntimeError(f"未找到模型文件: {model_path}")
 
@@ -121,6 +127,7 @@ def create_face_landmarker(model_dir: Path):
 
 
 def boxes_from_landmarks(landmarks, w: int, h: int, flipped: bool):
+    """从 FaceLandmarker 关键点生成左右眼框。"""
     # 从单张人脸关键点生成左右眼独立框。
     # flipped=True 表示输入图是镜像图，需要把 x 坐标映射回原图坐标系。
     def build(indices):
@@ -159,6 +166,7 @@ def boxes_from_landmarks(landmarks, w: int, h: int, flipped: bool):
 
 
 def landmarker_boxes(image, landmarker: vision.FaceLandmarker):
+    """MediaPipe 主流程：原图失败后尝试镜像图。"""
     # MediaPipe 主流程：先原图检测，失败后再尝试镜像图。
     h, w = image.shape[:2]
     max_eye_idx = max(max(LEFT_EYE_INDICES), max(RIGHT_EYE_INDICES))
@@ -181,6 +189,7 @@ def landmarker_boxes(image, landmarker: vision.FaceLandmarker):
 
 
 def pick_best_mtcnn_face(image, mtcnn_detector):
+    """从 MTCNN 多脸结果中选择置信度最高的那张。"""
     # 只取置信度最高的人脸，避免多脸干扰。
     rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     boxes, probs, landmarks = mtcnn_detector.detect(rgb, landmarks=True)
@@ -204,6 +213,7 @@ def pick_best_mtcnn_face(image, mtcnn_detector):
 
 
 def mtcnn_landmarks_reliable(landmarks, face_box) -> bool:
+    """判定 MTCNN 关键点是否可信，过滤离谱点。"""
     # 过滤明显错误的眼睛关键点，减少乱遮。
     if landmarks is None or len(landmarks) < 2:
         return False
@@ -226,6 +236,7 @@ def mtcnn_landmarks_reliable(landmarks, face_box) -> bool:
 
 
 def mtcnn_boxes(image, mtcnn_detector, force_single_profile_box: bool = False):
+    """旧接口兼容：转调 detect_with_mtcnn。"""
     # 兼容旧接口：内部转调 detect_with_mtcnn。
     return detect_with_mtcnn(
         image=image,
@@ -235,6 +246,7 @@ def mtcnn_boxes(image, mtcnn_detector, force_single_profile_box: bool = False):
 
 
 def detect_with_mtcnn(image, mtcnn_detector, force_single_profile_box: bool = False):
+    """MTCNN 兜底检测：输出单眼或双眼框。"""
     # MTCNN 兜底：输出 1~2 个眼罩框。
     # 规则：正/轻侧脸时输出双眼框；强侧脸时输出单眼框，尽量避免遮到鼻梁。
     results = []
@@ -311,6 +323,7 @@ def detect_with_mtcnn(image, mtcnn_detector, force_single_profile_box: bool = Fa
 
 
 def detect_eye_mask_boxes(image, image_path: Path, landmarker, mtcnn_detector):
+    """统一入口：MediaPipe 优先，MTCNN 兜底。"""
     # 统一入口：MediaPipe 优先，失败后 MTCNN 兜底。
     # 返回 (boxes, source)，source 用于日志区分来自哪个检测器。
     boxes = landmarker_boxes(image, landmarker)
@@ -327,6 +340,7 @@ def detect_eye_mask_boxes(image, image_path: Path, landmarker, mtcnn_detector):
 
 
 def semantic_boxes_from_landmarks(landmarks, w: int, h: int, flipped: bool):
+    """生成语义框（眼/鼻/嘴）用于可视化检查。"""
     # 从单张人脸关键点生成语义框（眼睛/鼻子/嘴巴）。
     mapping = {
         "left_eye": LEFT_EYE_INDICES,
