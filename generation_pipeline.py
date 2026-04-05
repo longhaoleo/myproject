@@ -5,7 +5,6 @@
     python generation_pipeline.py
 
 通过修改 RUN_MODE 或环境变量 GEN_RUN_MODE 选择流程：
-- prepare_dataset
 - train_lora
 - infer
 - evaluate
@@ -16,17 +15,12 @@ from __future__ import annotations
 import os
 
 
-RUN_MODE = "prepare_dataset"
+RUN_MODE = "infer"
 
 
 def main() -> None:
     mode = os.getenv("GEN_RUN_MODE", RUN_MODE).strip().lower()
 
-    if mode == "prepare_dataset":
-        from detection.prepare_dataset import main as run_prepare_dataset
-
-        run_prepare_dataset()
-        return
     if mode == "train_lora":
         from generation.train import main as run_train_lora
 
@@ -44,7 +38,7 @@ def main() -> None:
         return
 
     raise ValueError(
-        f"不支持的 RUN_MODE: {mode}。可选值：prepare_dataset / train_lora / infer / evaluate"
+        f"不支持的 RUN_MODE: {mode}。可选值：train_lora / infer / evaluate"
     )
 
 

@@ -1,9 +1,7 @@
-# 统一依赖（建议 Python 3.10，本地/服务器优先）
+# 统一依赖（建议 Python 3.10）
 # 说明：
 # - 该文件目标是“一套环境可直接跑三个模式”；
-# - TensorFlow 采用 2.15.x，避免与 mediapipe 的 protobuf 约束冲突；
-# - 不建议在 Colab(Python 3.12) 直接安装本文件，请改用 requirements.colab.txt；
-# - Colab 默认环境里 tensorflow==2.15.1 不可用，retina-face 也会被连带影响。
+# - TensorFlow 采用 2.15.x，避免与 mediapipe 的 protobuf 约束冲突。
 
 # 基础
 numpy==1.26.4
@@ -12,18 +10,12 @@ mediapipe==0.10.14
 requests>=2.31,<3.0
 Pillow>=10.4,<12.0
 
-# MTCNN / PyTorch 侧
-# 说明：
-# - 建议让 torch 与 torchvision 由同一来源一起解析安装；
-# - 若直接复用 Colab 预装 torch，再强装旧 torchvision，容易出现版本不配套。
+# MTCNN
 torch>=2.1,<2.11
 torchvision>=0.16,<0.21
 facenet-pytorch==2.6.0
 
 # 多检测器
-# 说明：
-# - retina-face 依赖 TensorFlow 路线；
-# - tensorflow==2.15.1 适合 Python 3.10，不适合当前 Colab 默认 Python 3.12。
 retina-face==0.0.17
 tensorflow==2.15.1
 insightface==0.7.3
@@ -33,13 +25,9 @@ gdown>=5.2,<6.0
 
 # SAM（RUN_MODE=sam_mask）
 # 若 git 网络慢，可按 detection/README.md 用 zip 本地安装 MobileSAM。
-# Colab 中若 git 安装不稳定，也建议先跳过，待 sam_mask 模式需要时再补装。
 git+https://github.com/ChaoningZhang/MobileSAM.git
 
 # SDXL 生成侧（generation_pipeline.py）
-# 说明：
-# - optimum-quanto / torchao 偏量化和加速优化，适合作为第二阶段依赖；
-# - 若只是先跑通 Colab 主流程，可暂不安装，见 requirements.colab.txt。
 diffusers>=0.31,<0.36
 transformers>=4.44,<4.51
 accelerate>=0.34,<2.0

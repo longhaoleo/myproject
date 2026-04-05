@@ -4,12 +4,11 @@
 
 统一入口：`python generation_pipeline.py`
 
-支持 4 个模式：
+支持 3 个模式：
 
-1. `prepare_dataset`
-2. `train_lora`
-3. `infer`
-4. `evaluate`
+1. `train_lora`
+2. `infer`
+3. `evaluate`
 
 ## 1. 当前逻辑
 
@@ -46,32 +45,24 @@ SAM 部位 mask 沿用 `detection/sam_mask.py` 的输出：
 
 这些规则由 detection 侧生成并落盘，generation 只读取：
 
-1. 重绘区域是连续的 `nose + mouth` 联合 `inpaint_mask`。
-2. 默认优先使用方框 mask，而不是直接使用 SAM 轮廓。
-3. `face` 会被整理成更大的方形头框，作为头部参考区域。
-4. 眼部隐私 mask 可选预先打码，并且会单独落盘成 `eye_privacy_mask` 图。
-5. 若眼部隐私 mask 与鼻嘴重绘区重叠，会自动把重叠区域从眼部 mask 中抠掉，并给编辑区额外留一圈安全边距。
-6. 训练与推理默认读取 detection 落盘的 `sanitized` 图，也就是已经应用过眼部 mask 的版本。
-7. depth 条件图目前是可选扩展，默认不启用；若后续接回，会基于“已完成眼部隐私处理”的图生成。
+1. 训练和推理输入图优先使用 `eye_mask` 后的图片；若未生成，则回退到原图。
+2. `face` 会被整理成标准化头部框，用于头部参考区域裁剪。
+3. 重绘目标区域是连续的 `nose + mouth` 联合 `inpaint_mask`。
+4. `feather_mask` 只用于最终回贴时的羽化混合。
+5. 默认优先使用方框 mask，而不是直接使用 SAM 轮廓。
+6. depth 条件图目前是可选扩展，默认不启用。
 
-### 1.3 四个模式的职责
-
-#### `prepare_dataset`
-
-说明：
-
-1. 该模式实际调用的是 detection 侧的 `prepare_dataset.py`。
-2. generation 不负责定义 mask 区域，只消费 detection 侧落盘的 `inpaint_mask` 与相关条件。
+### 1.3 三个模式的职责
 
 #### `train_lora`
 
 负责：
 
-1. 从 manifest 里筛选 `术后 + train split` 样本
+1. 运行时直接从 detection 输出构建 manifest，并筛选 `术后 + train split` 样本
 2. 同时构建两类训练样本
    - 方形头部参考图
    - 鼻嘴联合 crop 图
-3. 使用 `sanitized` 图和 `inpaint_mask` 训练 SDXL inpainting UNet LoRA
+3. 优先使用打码图，否则回退到原图；在 `face` 框内取头部参考区域，并结合 `inpaint_mask` 训练 SDXL inpainting UNet LoRA
 4. 落盘 checkpoint、最终 LoRA 权重和训练摘要
 
 #### `infer`
@@ -81,7 +72,7 @@ SAM 部位 mask 沿用 `detection/sam_mask.py` 的输出：
 ```text
 术前图
 -> detection 生成的连续鼻嘴 inpaint mask
--> detection 生成的 sanitized 参考图
+-> detection 生成的眼部打码图（若存在）
 -> SDXL Inpainting + LoRA
 -> 整图输出
 -> 仅按羽化 mask 回贴鼻嘴联合区域
@@ -99,7 +90,7 @@ SAM 部位 mask 沿用 `detection/sam_mask.py` 的输出：
 
 负责：
 
-1. 统计 manifest 完整率
+1. 运行时直接从 detection 输出构建 manifest
 2. 统计 nose / face mask 可用率
 3. 若启用了 depth，则统计 depth 可用率
 4. 统计术前图推理输出成功率
@@ -191,7 +182,6 @@ huggingface-cli download Intel/dpt-hybrid-midas \
 - `LoRATrainConfig.base_model_id`
 - `InferenceConfig.base_model_id`
 - `InferenceConfig.controlnet_model_id`
-- `DatasetBuildConfig.depth_model_id`
 
 ### 3.4 FP8 推理配置
 
@@ -236,21 +226,14 @@ run_inference(config=config)
 
 ## 4. 运行顺序
 
-### 4.1 准备数据
-
-```bash
-cd ~/myproject
-GEN_RUN_MODE=prepare_dataset python generation_pipeline.py
-```
-
-### 4.2 训练 LoRA
+### 4.1 训练 LoRA
 
 ```bash
 cd ~/myproject
 GEN_RUN_MODE=train_lora python generation_pipeline.py
 ```
 
-### 4.3 运行推理
+### 4.2 运行推理
 
 ```bash
 cd ~/myproject
@@ -260,7 +243,7 @@ GEN_RUN_MODE=infer python generation_pipeline.py
 如果你保持默认配置，这一步会优先按 `quanto + FP8` 加载推理模型。
 若当前环境的 `diffusers / torch / CUDA` 组合不支持，再把 `InferenceConfig.quantization_backend` 改成 `none` 做回退。
 
-### 4.4 运行评估
+### 4.3 运行评估
 
 ```bash
 cd ~/myproject
@@ -274,16 +257,6 @@ GEN_RUN_MODE=evaluate python generation_pipeline.py
 主要产物：
 
 ```text
-prepared/
-├── manifest.jsonl
-├── issues.jsonl
-├── inpaint_mask/
-├── feather_mask/
-├── eye_privacy_mask/
-├── sanitized/
-├── preview/
-└── parts/
-
 lora/
 ├── checkpoint-*/
 └── final/
@@ -297,7 +270,7 @@ eval/
 └── triptychs/
 
 summaries/
-├── prepare_dataset_summary.json
+├── manifest.jsonl
 ├── train_lora_summary.json
 ├── infer_summary.json
 └── evaluate_summary.json

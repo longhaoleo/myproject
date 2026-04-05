@@ -2,9 +2,9 @@
 生成侧集中配置。
 
 说明：
-- 这里定义生成 pipeline 的四个公开 dataclass；
-- 默认路径会复用 detection 的输入与 SAM 输出目录；
-- 具体运行阶段的业务逻辑分别放在 prepare_dataset/train/infer/eval 模块。
+- 这里定义生成 pipeline 的公开 dataclass；
+- 默认路径会复用 detection 的输入、SAM 输出目录和眼部打码输出目录；
+- 具体运行阶段的业务逻辑分别放在 train/infer/eval 模块。
 """
 
 from __future__ import annotations
@@ -41,33 +41,6 @@ class GenerationPaths:
     lora_root: Path
     inference_root: Path
     eval_root: Path
-
-
-@dataclass(frozen=True)
-class DatasetBuildConfig:
-    """数据准备配置。"""
-
-    doctor_token: str = "dr_style"
-    view_token_prefix: str = "view_"
-    train_ratio: float = 0.8
-    val_ratio: float = 0.1
-    split_seed: int = 42
-    use_box_mask: bool = True
-    edit_parts: tuple[str, ...] = ("nose", "mouth")
-    eye_parts: tuple[str, ...] = ("left_eye", "right_eye")
-    part_box_expand_px: int = 18
-    face_box_expand_px: int = 48
-    face_box_force_square: bool = True
-    face_clip_expand_px: int = 0
-    edit_safety_margin_px: int = 20
-    feather_blur_px: int = 31
-    enable_depth_condition: bool = False
-    depth_backend: str = "transformers"
-    depth_model_id: str = "Intel/dpt-hybrid-midas"
-    allow_depth_fallback: bool = True
-    privacy_fill: str = "black"
-    apply_eye_privacy_mask: bool = True
-    write_preview: bool = True
 
 
 @dataclass(frozen=True)
@@ -142,8 +115,8 @@ def default_generation_paths() -> GenerationPaths:
     )
     prepared_root = _path_from_env("GEN_PREPARED_ROOT", generation_root / "prepared")
     summaries_root = _path_from_env("GEN_SUMMARIES_ROOT", generation_root / "summaries")
-    manifest_path = _path_from_env("GEN_MANIFEST_PATH", prepared_root / "manifest.jsonl")
-    issues_path = _path_from_env("GEN_ISSUES_PATH", prepared_root / "issues.jsonl")
+    manifest_path = _path_from_env("GEN_MANIFEST_PATH", summaries_root / "manifest.jsonl")
+    issues_path = _path_from_env("GEN_ISSUES_PATH", summaries_root / "issues.jsonl")
     return GenerationPaths(
         input_root=_path_from_env("GEN_INPUT_ROOT", face_paths.input_root),
         sam_root=_path_from_env("GEN_SAM_ROOT", face_paths.output_root_sam),
@@ -154,19 +127,14 @@ def default_generation_paths() -> GenerationPaths:
         issues_path=issues_path,
         summaries_root=summaries_root,
         depth_root=_path_from_env("GEN_DEPTH_ROOT", prepared_root / "depth"),
-        inpaint_mask_root=_path_from_env("GEN_INPAINT_MASK_ROOT", prepared_root / "inpaint_mask"),
-        feather_mask_root=_path_from_env("GEN_FEATHER_MASK_ROOT", prepared_root / "feather_mask"),
+        inpaint_mask_root=_path_from_env("GEN_INPAINT_MASK_ROOT", face_paths.output_root_sam / "inpaint_mask"),
+        feather_mask_root=_path_from_env("GEN_FEATHER_MASK_ROOT", face_paths.output_root_sam / "feather_mask"),
         privacy_mask_root=_path_from_env("GEN_PRIVACY_MASK_ROOT", prepared_root / "eye_privacy_mask"),
-        sanitized_root=_path_from_env("GEN_SANITIZED_ROOT", prepared_root / "sanitized"),
+        sanitized_root=_path_from_env("GEN_SANITIZED_ROOT", face_paths.output_root_mask),
         lora_root=_path_from_env("GEN_LORA_ROOT", generation_root / "lora"),
         inference_root=_path_from_env("GEN_INFERENCE_ROOT", generation_root / "infer"),
         eval_root=_path_from_env("GEN_EVAL_ROOT", generation_root / "eval"),
     )
-
-
-def default_dataset_build_config() -> DatasetBuildConfig:
-    """返回数据准备默认配置。"""
-    return DatasetBuildConfig()
 
 
 def default_lora_train_config() -> LoRATrainConfig:

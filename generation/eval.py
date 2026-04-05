@@ -17,7 +17,8 @@ from typing import Any
 import cv2
 import numpy as np
 
-from project_utils.io import load_jsonl, write_json
+from project_utils.io import write_json
+from .index import build_generation_manifest
 from .settings import GenerationPaths, default_generation_paths, dump_config_snapshot
 
 
@@ -48,7 +49,7 @@ def run_evaluation(
 ) -> dict[str, Any]:
     """统计数据准备与推理结果，并导出三联预览。"""
     paths = paths or default_generation_paths()
-    manifest_rows = load_jsonl(paths.manifest_path)
+    manifest_rows = build_generation_manifest(paths)
 
     total_rows = len(manifest_rows)
     paired_ok = 0

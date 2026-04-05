@@ -22,6 +22,7 @@ import numpy as np
 from PIL import Image, ImageOps
 
 from project_utils.io import load_jsonl, write_json
+from .index import build_generation_manifest, part_mask_path
 from .settings import (
     GenerationPaths,
     LoRATrainConfig,
@@ -40,11 +41,6 @@ def _resolve_rel_path(paths: GenerationPaths, sample_path: str | Path) -> Path:
         except ValueError:
             continue
     raise ValueError(f"无法解析相对路径: {path}")
-
-
-def _prepared_part_path(paths: GenerationPaths, part_name: str, rel_path: Path) -> Path:
-    return (paths.prepared_root / "parts" / part_name / rel_path).with_suffix(".png")
-
 
 def _load_mask_bbox(path: Path) -> tuple[int, int, int, int] | None:
     if not path.exists():
@@ -154,12 +150,20 @@ def _build_training_samples(
     paths: GenerationPaths,
     config: LoRATrainConfig,
 ) -> list[_TrainSample]:
+    """
+    从 manifest 构造训练样本。
+
+    当前固定两类样本：
+    - head_reference：用 face 框内区域学习整体头部/姿态参考
+    - edit_crop：用鼻嘴局部区域学习目标重绘区域的形态偏好
+    """
     samples: list[_TrainSample] = []
     for row in manifest_rows:
         if row.get("stage") != "术后":
             continue
         if row.get("split") != "train":
             continue
+        # 训练输入图优先使用 eye_mask 后的图片；没有则回退原图。
         image_path = str(row.get("sanitized_image_path") or row.get("image_path") or "").strip()
         inpaint_mask_path = str(row.get("inpaint_mask_path") or "").strip()
         if not image_path or not inpaint_mask_path:
@@ -187,7 +191,7 @@ def _build_training_samples(
 
         rel_path = _resolve_rel_path(paths, image_path)
         nose_box = _load_mask_bbox(Path(str(row.get("nose_mask_path") or "")))
-        mouth_box = _load_mask_bbox(_prepared_part_path(paths, "mouth", rel_path))
+        mouth_box = _load_mask_bbox(part_mask_path(paths, "mouth", rel_path))
         if nose_box is None and mouth_box is None:
             continue
 
@@ -198,7 +202,7 @@ def _build_training_samples(
         y1 = min(box[1] for box in boxes)
         x2 = max(box[2] for box in boxes)
         y2 = max(box[3] for box in boxes)
-        # 鼻子和嘴巴一起裁成局部样本，强化医生对该区域的形态偏好。
+        # 鼻子和嘴巴一起裁成局部样本，并用同一张 inpaint_mask 指定重绘目标区域。
         crop_box = _expand_box(
             (x1, y1, x2, y2),
             width=width,
@@ -298,10 +302,10 @@ def train_lora(
     """训练 SDXL inpainting LoRA。"""
     paths = paths or default_generation_paths()
     config = config or default_lora_train_config()
-    manifest_rows = load_jsonl(paths.manifest_path)
+    manifest_rows = build_generation_manifest(paths)
     train_samples = _build_training_samples(manifest_rows, paths, config)
     if not train_samples:
-        raise RuntimeError("没有可用的训练样本，请先运行 prepare_dataset 并检查 manifest。")
+        raise RuntimeError("没有可用的训练样本，请先完成 detection 侧产物生成并检查 manifest。")
 
     import torch
     import torch.nn.functional as F

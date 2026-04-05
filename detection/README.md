@@ -12,7 +12,8 @@
 配置集中管理：`detection/settings.py`
 - 三个流程共用的默认路径、检测器阈值、视角缩放/偏移都在这里；
 - 各流程仍可在自己的文件里覆盖（例如只改 `sam_mask.py` 的视角参数）。
-- 方形放大的头部 `face_mask`、连续鼻嘴 `inpaint_mask`、`feather_mask`、`eye_privacy_mask`、`sanitized` 图与 `manifest` 由 `prepare_dataset.py` 负责生成；`depth` 目前保留为可选扩展。
+- `sam_mask.py` 会直接落盘标准化后的 `face_mask`、连续鼻嘴 `inpaint_mask` 和 `feather_mask`；
+- `eye_mask.py` 会直接输出眼部打码后的图片；
 - generation 侧不负责定义 mask 区域，只直接消费 detection 侧落盘结果。
 
 ---
@@ -223,21 +224,12 @@ from detection.sam_mask import main as run_sam_mask
 run_detect_compare()  # 或 run_eye_mask() / run_sam_mask()
 ```
 
-如需给 generation 准备输入条件，直接调用：
+如需给 generation 准备输入条件，直接运行：
 
-```python
-from detection.prepare_dataset import prepare_dataset
+1. `sam_mask`：生成 `parts/`、`inpaint_mask/`、`feather_mask/`
+2. `eye_mask`：按需生成打码图
 
-prepare_dataset()
-```
-
-`prepare_dataset.py` 的职责：
-
-1. detection 侧定义并落盘编辑区域，不由 generation 侧反推。
-2. `face` 会被整理成更大的方形头框，作为后续头部参考区域。
-3. 鼻子和嘴巴会合成为一块连续的 `inpaint_mask`，中间无缝桥接。
-4. 眼部隐私 mask 会整体避开这块连续鼻嘴编辑区，并单独输出为图。
-5. generation 后续直接读取 `sanitized` 图、`inpaint_mask` 和 `eye_privacy_mask` 进入训练或推理。
+generation 后续会在运行时直接扫描这些 detection 产物并构建 manifest，不再需要单独的准备步骤。
 
 ---
 
@@ -252,9 +244,17 @@ prepare_dataset()
 
 说明：
 - `default_paths()` 支持环境变量覆盖（`FD_INPUT_ROOT` 等）；
+- 视角微调直接写在 [detection/settings.py](settings.py) 里的 `_view_tweaks_config()`；
 - 视角用文件名 `1~6` 匹配；
 - 偏移使用 **ratio**（相对人脸框宽高），并且会影响关键点、部位框和 SAM 提示。
-- 若只想改某一个流程（例如只改 `sam_mask`），在该文件内覆盖 `part_scale_by_view / part_offset_by_view` 即可，不必改全局。
+- `sam_mask`、`segmentation`、`visualize` 都共用这份配置，改一处即可全局生效。
+- 配置结构是“顶层方法，下一层视角”：
+  - `methods.default.views."<id>"`：所有方法默认值
+  - `methods.<method_name>.views."<id>"`：某个方法的覆盖值
+- 当前已接入的方法名：
+  - `detect_compare`
+  - `eye_mask`
+  - `sam_mask`
 
 ---
 

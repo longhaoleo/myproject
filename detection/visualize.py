@@ -5,6 +5,7 @@
 import cv2
 import numpy as np
 
+from .settings import get_view_offset_map, get_view_scale_map, resolve_part_offset
 from .types import FaceDetection
 
 
@@ -144,15 +145,10 @@ def _draw_semantic_part_boxes(
     # 眼睛框：由眼睛关键点中心点 + 人脸比例得到。
     eye_w = max(12, int(face_w * 0.22))
     eye_h = max(10, int(face_h * 0.14))
-    scale_map = part_scale_by_view.get(view_id, {}) if part_scale_by_view and view_id else {}
-    offset_map = part_offset_by_view.get(view_id, {}) if part_offset_by_view and view_id else {}
-
-    def resolve_offset(offset_pair: tuple[float, float]) -> tuple[int, int]:
-        ox, oy = offset_pair
-        return int(round(ox * face_w)), int(round(oy * face_h))
+    scale_map = get_view_scale_map(view_id, part_scale_by_view)
+    offset_map = get_view_offset_map(view_id, part_offset_by_view)
     eye_sx, eye_sy = scale_map.get("left_eye", (1.0, 1.0))
-    eye_ox, eye_oy = resolve_offset(offset_map.get("left_eye", (0.0, 0.0)))
-    eye_ox, eye_oy = int(round(eye_ox)), int(round(eye_oy))
+    eye_ox, eye_oy = resolve_part_offset("left_eye", offset_map, face_w, face_h, part_offset_mode)
     if "left_eye" in lm:
         ex, ey = lm["left_eye"]
         eye_box = _box_from_center(
@@ -166,8 +162,7 @@ def _draw_semantic_part_boxes(
         if eye_box is not None:
             _draw_part_box(canvas, eye_box, "left_eye")
     eye_sx, eye_sy = scale_map.get("right_eye", (1.0, 1.0))
-    eye_ox, eye_oy = resolve_offset(offset_map.get("right_eye", (0.0, 0.0)))
-    eye_ox, eye_oy = int(round(eye_ox)), int(round(eye_oy))
+    eye_ox, eye_oy = resolve_part_offset("right_eye", offset_map, face_w, face_h, part_offset_mode)
     if "right_eye" in lm:
         ex, ey = lm["right_eye"]
         eye_box = _box_from_center(
@@ -188,8 +183,7 @@ def _draw_semantic_part_boxes(
         nose_w = max(16, int(face_w * 0.26))
         nose_h = max(12, int(face_h * 0.22))
         nose_sx, nose_sy = scale_map.get("nose", (1.0, 1.0))
-        nose_ox, nose_oy = resolve_offset(offset_map.get("nose", (0.0, 0.0)))
-        nose_ox, nose_oy = int(round(nose_ox)), int(round(nose_oy))
+        nose_ox, nose_oy = resolve_part_offset("nose", offset_map, face_w, face_h, part_offset_mode)
         nose_box = _box_from_center(
             nx + int(round(nose_ox)),
             ny + int(round(nose_oy)),
@@ -203,8 +197,7 @@ def _draw_semantic_part_boxes(
 
     # 嘴巴框：优先用左右嘴角合成更稳定的框；没有嘴角时退化到 mouth 中心点。
     mouth_sx, mouth_sy = scale_map.get("mouth", (1.0, 1.0))
-    mouth_ox, mouth_oy = resolve_offset(offset_map.get("mouth", (0.0, 0.0)))
-    mouth_ox, mouth_oy = int(round(mouth_ox)), int(round(mouth_oy))
+    mouth_ox, mouth_oy = resolve_part_offset("mouth", offset_map, face_w, face_h, part_offset_mode)
     if "mouth_left" in lm and "mouth_right" in lm:
         mlx, mly = lm["mouth_left"]
         mrx, mry = lm["mouth_right"]
@@ -367,24 +360,13 @@ def draw_face_detections(
             normalized = _normalize_landmarks(det.landmarks)
             # 视角偏移：让关键点与部位框保持一致（仅影响可视化）
             active_view = getattr(det, "view_id", None) or view_id
-            offset_map = (
-                part_offset_by_view.get(active_view, {})
-                if part_offset_by_view and active_view
-                else {}
-            )
+            offset_map = get_view_offset_map(active_view, part_offset_by_view)
             fx1, fy1, fx2, fy2 = det.box
             face_w = max(1, fx2 - fx1)
             face_h = max(1, fy2 - fy1)
 
-            def resolve_offset(name: str) -> tuple[int, int]:
-                key = "mouth" if name in {"mouth_left", "mouth_right"} else name
-                ox, oy = offset_map.get(key, (0.0, 0.0))
-                if part_offset_mode == "ratio":
-                    return int(round(ox * face_w)), int(round(oy * face_h))
-                return int(round(ox)), int(round(oy))
-
             for name, (px, py) in normalized.items():
-                dx, dy = resolve_offset(name)
+                dx, dy = resolve_part_offset(name, offset_map, face_w, face_h, part_offset_mode)
                 color = POINT_COLORS.get(name, (200, 200, 200))
                 cv2.circle(canvas, (px + dx, py + dy), point_radius, color, -1)
                 cv2.putText(

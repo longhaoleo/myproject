@@ -15,7 +15,8 @@ import cv2
 import numpy as np
 from PIL import Image
 
-from project_utils.io import load_jsonl, write_json
+from project_utils.io import write_json
+from .index import build_generation_manifest
 from .settings import (
     GenerationPaths,
     InferenceConfig,
@@ -251,7 +252,7 @@ def run_inference(
     """运行术前图批量推理。"""
     paths = paths or default_generation_paths()
     config = config or default_inference_config()
-    manifest_rows = load_jsonl(paths.manifest_path)
+    manifest_rows = build_generation_manifest(paths)
     import torch
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")

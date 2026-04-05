@@ -14,7 +14,14 @@ import cv2
 
 from .factory import create_face_detector, supported_detector_names
 from .segmentation import FaceSegmenter, create_face_segmenter
-from .settings import default_detector_options, default_min_confidence_map, default_paths
+from .settings import (
+    default_detector_options,
+    default_min_confidence_map,
+    default_part_offset_mode,
+    default_part_offset_by_view,
+    default_part_scale_by_view,
+    default_paths,
+)
 from .visualize import draw_face_detections
 from project_utils.dataset import iter_images, pick_random_groups, sort_key
 
@@ -51,6 +58,9 @@ def run_one_detector(
     draw_segmentation_masks: bool,
     draw_segmentation_parts: bool,
     print_box_info: bool,
+    part_scale_by_view: dict[str, dict[str, tuple[float, float]]],
+    part_offset_by_view: dict[str, dict[str, tuple[float, float]]],
+    part_offset_mode: str,
 ):
     """运行单个检测器并输出可视化结果。"""
     # 每次仅实例化一个检测器，避免多模型同时占用内存。
@@ -73,6 +83,7 @@ def run_one_detector(
     try:
         for image_path in image_paths:
             rel_path = image_path.relative_to(input_root)
+            view_id = rel_path.stem
             image = cv2.imread(str(image_path))
             if image is None:
                 read_failed_count += 1
@@ -81,6 +92,8 @@ def run_one_detector(
 
             try:
                 detections = detector.detect(image)
+                for det in detections:
+                    det.view_id = view_id
             except Exception as exc:
                 infer_failed_count += 1
                 print(f"[{detector_name}] 跳过(推理失败): {image_path} | {exc}")
@@ -118,6 +131,10 @@ def run_one_detector(
                 draw_landmarks=draw_landmarks,
                 draw_part_boxes=draw_part_boxes,
                 segmentation_masks=segmentation_masks,
+                view_id=view_id,
+                part_scale_by_view=part_scale_by_view,
+                part_offset_by_view=part_offset_by_view,
+                part_offset_mode=part_offset_mode,
             )
 
             output_path = detector_output_root / rel_path
@@ -175,6 +192,10 @@ def main():
     # 分割接口开关（默认关闭，不影响现有检测流程）
     enable_segmentation_refine = False
     segmenter_name = "mobile-sam"
+    tweak_method_name = "detect_compare"
+    part_scale_by_view = default_part_scale_by_view(method_name=tweak_method_name)
+    part_offset_by_view = default_part_offset_by_view(method_name=tweak_method_name)
+    part_offset_mode = default_part_offset_mode(method_name=tweak_method_name)
     segmenter_options: dict[str, Any] = {
         # 轻量 SAM 权重默认位置
         "model_path": str(model_dir / "sam" / "mobile_sam.pt"),
@@ -182,6 +203,9 @@ def main():
         "model_type": "vit_t",
         # part_names 决定“按部位分割”时会提示哪些区域
         "part_names": ("face", "left_eye", "right_eye", "nose", "mouth"),
+        "part_scale_by_view": part_scale_by_view,
+        "part_offset_by_view": part_offset_by_view,
+        "part_offset_mode": part_offset_mode,
     }
 
     # 是否绘制关键点（模型不提供时会自动跳过）
@@ -254,6 +278,9 @@ def main():
                     draw_segmentation_masks=draw_segmentation_masks,
                     draw_segmentation_parts=draw_segmentation_parts,
                     print_box_info=print_box_info,
+                    part_scale_by_view=part_scale_by_view,
+                    part_offset_by_view=part_offset_by_view,
+                    part_offset_mode=part_offset_mode,
                 )
                 stats_by_detector.append(stats)
             except Exception as exc:

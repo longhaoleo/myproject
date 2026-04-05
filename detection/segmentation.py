@@ -17,6 +17,7 @@ from typing import Any, Protocol
 import cv2
 import numpy as np
 
+from .settings import get_view_offset_map, get_view_scale_map, resolve_part_offset
 from .types import FaceDetection
 
 
@@ -145,15 +146,11 @@ def _part_prompt_boxes(
     face_w = max(1, face_x2 - face_x1)
     face_h = max(1, face_y2 - face_y1)
 
-    def resolve_offset(offset_pair: tuple[float, float]) -> tuple[int, int]:
-        ox, oy = offset_pair
-        return int(round(ox * face_w)), int(round(oy * face_h))
-
     if "face" in part_names:
-        scale_map = part_scale_by_view.get(view_id, {}) if part_scale_by_view and view_id else {}
-        offset_map = part_offset_by_view.get(view_id, {}) if part_offset_by_view and view_id else {}
+        scale_map = get_view_scale_map(view_id, part_scale_by_view)
+        offset_map = get_view_offset_map(view_id, part_offset_by_view)
         sx, sy = scale_map.get("face", (1.0, 1.0))
-        ox, oy = resolve_offset(offset_map.get("face", (0.0, 0.0)))
+        ox, oy = resolve_part_offset("face", offset_map, face_w, face_h, part_offset_mode)
         if abs(sx - 1.0) < 1e-6 and abs(sy - 1.0) < 1e-6:
             fx1, fy1, fx2, fy2 = face_box
             shifted = _clip_box(fx1 + ox, fy1 + oy, fx2 + ox, fy2 + oy, image_w, image_h)
@@ -176,10 +173,10 @@ def _part_prompt_boxes(
     # 经验比例：让部位框覆盖关键点周围区域，尽量少吃到鼻梁。
     eye_w = max(12, int(face_w * 0.22))
     eye_h = max(10, int(face_h * 0.14))
-    scale_map = part_scale_by_view.get(view_id, {}) if part_scale_by_view and view_id else {}
-    offset_map = part_offset_by_view.get(view_id, {}) if part_offset_by_view and view_id else {}
+    scale_map = get_view_scale_map(view_id, part_scale_by_view)
+    offset_map = get_view_offset_map(view_id, part_offset_by_view)
     eye_sx, eye_sy = scale_map.get("left_eye", (1.0, 1.0))
-    eye_ox, eye_oy = resolve_offset(offset_map.get("left_eye", (0.0, 0.0)))
+    eye_ox, eye_oy = resolve_part_offset("left_eye", offset_map, face_w, face_h, part_offset_mode)
     if "left_eye" in part_names and "left_eye" in lm:
         box = _box_from_center(
             lm["left_eye"][0] + int(round(eye_ox)),
@@ -192,7 +189,7 @@ def _part_prompt_boxes(
         if box is not None:
             boxes["left_eye"] = box
     eye_sx, eye_sy = scale_map.get("right_eye", (1.0, 1.0))
-    eye_ox, eye_oy = resolve_offset(offset_map.get("right_eye", (0.0, 0.0)))
+    eye_ox, eye_oy = resolve_part_offset("right_eye", offset_map, face_w, face_h, part_offset_mode)
     if "right_eye" in part_names and "right_eye" in lm:
         box = _box_from_center(
             lm["right_eye"][0] + int(round(eye_ox)),
@@ -211,7 +208,7 @@ def _part_prompt_boxes(
         nose_w = max(16, int(face_w * 0.26))
         nose_h = max(12, int(face_h * 0.22))
         nose_sx, nose_sy = scale_map.get("nose", (1.0, 1.0))
-        nose_ox, nose_oy = resolve_offset(offset_map.get("nose", (0.0, 0.0)))
+        nose_ox, nose_oy = resolve_part_offset("nose", offset_map, face_w, face_h, part_offset_mode)
         box = _box_from_center(
             lm["nose"][0] + int(round(nose_ox)),
             lm["nose"][1] + int(round(nose_oy)),
@@ -226,7 +223,7 @@ def _part_prompt_boxes(
     # 嘴巴框：优先由左右嘴角合成，侧脸情况下更稳。
     if "mouth" in part_names:
         mouth_sx, mouth_sy = scale_map.get("mouth", (1.0, 1.0))
-        mouth_ox, mouth_oy = resolve_offset(offset_map.get("mouth", (0.0, 0.0)))
+        mouth_ox, mouth_oy = resolve_part_offset("mouth", offset_map, face_w, face_h, part_offset_mode)
         if "mouth_left" in lm and "mouth_right" in lm:
             mlx, mly = lm["mouth_left"]
             mrx, mry = lm["mouth_right"]

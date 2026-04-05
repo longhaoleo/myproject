@@ -20,14 +20,24 @@ from typing import Any
 import cv2
 import numpy as np
 
+from .artifacts import (
+    ArtifactConfig,
+    blur_mask_u8,
+    build_continuous_edit_mask,
+    mask_to_u8,
+    standardize_part_masks,
+)
 from .factory import create_face_detector, supported_detector_names
 from .segmentation import PART_NAMES, create_face_segmenter
 from .settings import (
     default_detector_options,
     default_min_confidence_map,
+    default_part_offset_mode,
     default_part_offset_by_view,
     default_part_scale_by_view,
     default_paths,
+    get_view_offset_map,
+    resolve_part_offset,
 )
 from .types import FaceDetection
 from .visualize import draw_face_detections
@@ -46,6 +56,23 @@ def _bool_mask_to_u8(mask: np.ndarray) -> np.ndarray:
     """把 bool/0-1 mask 转成 0/255 灰度图。"""
     # 把 bool/0-1 mask 转成 0/255，便于可视化与后续处理。
     return (mask.astype(np.uint8) * 255)
+
+
+def _make_preview_strip(
+    base_preview: np.ndarray,
+    inpaint_mask: np.ndarray,
+    feather_mask_u8: np.ndarray,
+) -> np.ndarray:
+    """把检测预览、二值 inpaint、羽化 mask 拼成一张预览图。"""
+    h, w = base_preview.shape[:2]
+    binary_bgr = cv2.cvtColor(mask_to_u8(inpaint_mask), cv2.COLOR_GRAY2BGR)
+    feather_bgr = cv2.cvtColor(feather_mask_u8, cv2.COLOR_GRAY2BGR)
+    tiles = [
+        base_preview,
+        cv2.resize(binary_bgr, (w, h), interpolation=cv2.INTER_NEAREST),
+        cv2.resize(feather_bgr, (w, h), interpolation=cv2.INTER_NEAREST),
+    ]
+    return np.concatenate(tiles, axis=1)
 
 
 def _cache_path(cache_root: Path, rel_path: Path) -> Path:
@@ -178,9 +205,11 @@ def main():
 
     # SAM 配置（轻量版）
     segmenter_name = "mobile-sam"
+    tweak_method_name = "sam_mask"
     # 视角缩放/偏移：默认走 settings.py，你可以在这里做“仅本流程”的覆盖
-    part_scale_by_view = default_part_scale_by_view()
-    part_offset_by_view = default_part_offset_by_view()
+    part_scale_by_view = default_part_scale_by_view(method_name=tweak_method_name)
+    part_offset_by_view = default_part_offset_by_view(method_name=tweak_method_name)
+    part_offset_mode = default_part_offset_mode(method_name=tweak_method_name)
     segmenter_options: dict[str, Any] = {
         "model_path": str(model_dir / "sam" / "mobile_sam.pt"),
         "model_type": "vit_t",
@@ -190,8 +219,7 @@ def main():
         "part_scale_by_view": part_scale_by_view,
         # 视角独立偏移（按脸的比例算 dx, dy）：正值向右/向下，负值向左/向上
         "part_offset_by_view": part_offset_by_view,
-        # 偏移固定为 ratio：鼻子向右 3% face_w、向下 2% face_h -> (0.03, 0.02)
-        "part_offset_mode": "ratio",
+        "part_offset_mode": part_offset_mode,
     }
 
     # 输出控制
@@ -200,6 +228,15 @@ def main():
     draw_segmentation_masks = True
     draw_segmentation_parts = True
     export_part_masks = True
+    export_generation_artifacts = True
+    artifact_config = ArtifactConfig(
+        use_box_mask=True,
+        part_box_expand_px=18,
+        face_box_expand_px=48,
+        face_box_force_square=True,
+        face_clip_expand_px=0,
+        feather_blur_px=31,
+    )
 
     # 随机抽样组数：0 表示全量
     random_group_count = 20
@@ -340,12 +377,8 @@ def main():
                 det.view_id = view_id
 
             # 按视角对关键点做“根本偏移”，影响后续所有框与分割提示。
-            offset_mode = "ratio"
-            offset_map_all = segmenter_options.get("part_offset_by_view", {})
-            if isinstance(offset_map_all, dict):
-                offset_map = offset_map_all.get(view_id, {})
-            else:
-                offset_map = {}
+            offset_mode = str(segmenter_options.get("part_offset_mode", part_offset_mode)).strip().lower()
+            offset_map = get_view_offset_map(view_id, segmenter_options.get("part_offset_by_view"))
 
             if offset_map:
                 for det in detections:
@@ -353,17 +386,10 @@ def main():
                     face_w = max(1, x2 - x1)
                     face_h = max(1, y2 - y1)
 
-                    def resolve_offset(name: str) -> tuple[int, int]:
-                        key = "mouth" if name in {"mouth_left", "mouth_right"} else name
-                        ox, oy = offset_map.get(key, (0.0, 0.0))
-                        if offset_mode == "ratio":
-                            return int(round(ox * face_w)), int(round(oy * face_h))
-                        return int(round(ox)), int(round(oy))
-
                     if det.landmarks:
                         new_landmarks = {}
                         for name, (px, py) in det.landmarks.items():
-                            dx, dy = resolve_offset(name)
+                            dx, dy = resolve_part_offset(name, offset_map, face_w, face_h, offset_mode)
                             new_landmarks[name] = (int(px + dx), int(py + dy))
                         det.landmarks = new_landmarks
 
@@ -398,9 +424,6 @@ def main():
                 part_offset_by_view=segmenter_options.get("part_offset_by_view"),
                 part_offset_mode=str(segmenter_options.get("part_offset_mode", "pixel")).strip().lower(),
             )
-            preview_path = output_root / "preview" / rel_path
-            preview_path.parent.mkdir(parents=True, exist_ok=True)
-            cv2.imwrite(str(preview_path), preview)
 
             # 导出全图合并 mask
             merged_all = _merge_masks(merged_masks, h=h, w=w)
@@ -409,6 +432,7 @@ def main():
             cv2.imwrite(str(merged_path), _bool_mask_to_u8(merged_all))
 
             # 导出分部位 mask（可选）
+            preview_to_write = preview
             if export_part_masks and part_masks_list is not None:
                 part_union = _merge_part_masks(
                     part_masks_list=part_masks_list,
@@ -416,10 +440,42 @@ def main():
                     w=w,
                     part_names=PART_NAMES,
                 )
+                if export_generation_artifacts:
+                    standardized = standardize_part_masks(
+                        part_masks=part_union,
+                        height=h,
+                        width=w,
+                        config=artifact_config,
+                    )
+                    part_union.update(standardized)
+                    face_mask = part_union.get("face", np.ones((h, w), dtype=bool))
+                    nose_mask = part_union.get("nose", np.zeros((h, w), dtype=bool))
+                    mouth_mask = part_union.get("mouth", np.zeros((h, w), dtype=bool))
+                    inpaint_mask = build_continuous_edit_mask(
+                        nose_mask=nose_mask,
+                        mouth_mask=mouth_mask,
+                        face_mask=face_mask,
+                    )
+                    feather_mask_u8 = blur_mask_u8(inpaint_mask, artifact_config.feather_blur_px)
+                    inpaint_path = (output_root / "inpaint_mask" / rel_path).with_suffix(".png")
+                    feather_path = (output_root / "feather_mask" / rel_path).with_suffix(".png")
+                    inpaint_path.parent.mkdir(parents=True, exist_ok=True)
+                    feather_path.parent.mkdir(parents=True, exist_ok=True)
+                    cv2.imwrite(str(inpaint_path), mask_to_u8(inpaint_mask))
+                    cv2.imwrite(str(feather_path), feather_mask_u8)
+                    preview_to_write = _make_preview_strip(
+                        base_preview=preview,
+                        inpaint_mask=inpaint_mask,
+                        feather_mask_u8=feather_mask_u8,
+                    )
                 for part_name, part_mask in part_union.items():
                     part_path = (output_root / "parts" / part_name / rel_path).with_suffix(".png")
                     part_path.parent.mkdir(parents=True, exist_ok=True)
                     cv2.imwrite(str(part_path), _bool_mask_to_u8(part_mask))
+
+            preview_path = output_root / "preview" / rel_path
+            preview_path.parent.mkdir(parents=True, exist_ok=True)
+            cv2.imwrite(str(preview_path), preview_to_write)
 
             ok_count += 1
             print(f"[sam-mask] 已输出: {preview_path}")

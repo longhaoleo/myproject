@@ -14,7 +14,17 @@ import cv2
 
 from .factory import create_face_detector
 from .mask_apply import draw_black_boxes
-from .settings import default_detector_options, default_min_confidence_map, default_paths
+from .settings import (
+    adjust_box_for_view,
+    default_detector_options,
+    default_min_confidence_map,
+    default_part_offset_mode,
+    default_part_offset_by_view,
+    default_part_scale_by_view,
+    default_paths,
+    get_view_offset_map,
+    get_view_scale_map,
+)
 from project_utils.dataset import iter_images, sort_key
 
 
@@ -45,6 +55,9 @@ def process_one(
     image_path: Path,
     output_path: Path | None,
     detectors,
+    part_scale_by_view: dict[str, dict[str, tuple[float, float]]],
+    part_offset_by_view: dict[str, dict[str, tuple[float, float]]],
+    part_offset_mode: str,
 ):
     """单图处理：按优先级尝试检测器 -> 直接置黑 -> 返回状态与最终框。"""
     image = cv2.imread(str(image_path))
@@ -60,7 +73,22 @@ def process_one(
         if detections:
             break
 
-    boxes = [det.box for det in detections]
+    view_id = image_path.stem
+    scale_map = get_view_scale_map(view_id, part_scale_by_view)
+    offset_map = get_view_offset_map(view_id, part_offset_by_view)
+    h, w = image.shape[:2]
+    boxes = [
+        adjust_box_for_view(
+            box=det.box,
+            part_name="face",
+            image_w=w,
+            image_h=h,
+            scale_map=scale_map,
+            offset_map=offset_map,
+            part_offset_mode=part_offset_mode,
+        )
+        for det in detections
+    ]
     if not boxes:
         return "no_face", []
 
@@ -81,6 +109,7 @@ def main():
 
     # 选择用于打框的检测器
     detector_name = "yolov8-face"
+    tweak_method_name = "eye_mask"
     # 兜底检测器（按顺序尝试）
     fallback_detectors = [
         "mediapipe-landmarker",
@@ -92,6 +121,9 @@ def main():
     ]
     min_confidence_map = default_min_confidence_map()
     detector_options_map = default_detector_options(paths.model_dir)
+    part_scale_by_view = default_part_scale_by_view(method_name=tweak_method_name)
+    part_offset_by_view = default_part_offset_by_view(method_name=tweak_method_name)
+    part_offset_mode = default_part_offset_mode(method_name=tweak_method_name)
 
     # 是否输出打码结果图
     enable_mask_output = True
@@ -130,6 +162,9 @@ def main():
                 image_path=image_path,
                 output_path=output_path,
                 detectors=detectors,
+                part_scale_by_view=part_scale_by_view,
+                part_offset_by_view=part_offset_by_view,
+                part_offset_mode=part_offset_mode,
             )
 
             if status == "ok":
@@ -169,6 +204,7 @@ def main():
             f"elapsed_seconds={elapsed:.6f}",
             f"primary_detector={detector_name}",
             f"fallback_detectors={','.join(fallback_detectors)}",
+            f"tweak_method_name={tweak_method_name}",
         ],
     )
 
