@@ -8,6 +8,7 @@
 """
 
 from pathlib import Path
+import time
 
 import cv2
 
@@ -22,6 +23,14 @@ SKIP_REASON = {
     "read_failed": "读取失败",
     "no_face": "未检测到人脸",
 }
+
+
+def _write_lines(file_path: Path, lines: list[str]) -> None:
+    """把文本行写入文件（用于统计落盘）。"""
+    file_path.parent.mkdir(parents=True, exist_ok=True)
+    with file_path.open("w", encoding="utf-8") as f:
+        for line in lines:
+            f.write(line + "\n")
 
 
 def format_boxes(boxes: list[tuple[int, int, int, int]]) -> str:
@@ -94,6 +103,7 @@ def main():
         print(f"未找到图片: {input_root}")
         return
 
+    start = time.perf_counter()
     detectors = []
     all_detector_names = [detector_name] + fallback_detectors
     for name in all_detector_names:
@@ -108,6 +118,8 @@ def main():
 
     ok_count = 0
     skip_count = 0
+    read_failed_count = 0
+    no_face_count = 0
     try:
         for image_path in image_paths:
             output_path = None
@@ -130,12 +142,35 @@ def main():
                     print(f"遮挡框: {format_boxes(final_boxes)}")
             else:
                 skip_count += 1
+                if status == "read_failed":
+                    read_failed_count += 1
+                elif status == "no_face":
+                    no_face_count += 1
                 print(f"已跳过({SKIP_REASON.get(status, status)}): {image_path}")
     finally:
         for detector in detectors:
             detector.close()
 
-    print(f"处理完成，总成功 {ok_count} 张，跳过 {skip_count} 张。")
+    elapsed = time.perf_counter() - start
+    print("\n=== eye-mask 汇总 ===")
+    print(f"处理成功: {ok_count}")
+    print(f"跳过总数: {skip_count}")
+    print(f"未检测到人脸: {no_face_count}")
+    print(f"读取失败: {read_failed_count}")
+    print(f"总耗时: {elapsed:.2f}s")
+
+    _write_lines(
+        output_root / "_run_stats" / "eye_mask_summary.txt",
+        [
+            f"ok_count={ok_count}",
+            f"skip_count={skip_count}",
+            f"no_face_count={no_face_count}",
+            f"read_failed_count={read_failed_count}",
+            f"elapsed_seconds={elapsed:.6f}",
+            f"primary_detector={detector_name}",
+            f"fallback_detectors={','.join(fallback_detectors)}",
+        ],
+    )
 
 
 if __name__ == "__main__":
