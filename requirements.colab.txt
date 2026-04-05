@@ -4,13 +4,14 @@
 # - 默认绕开 tensorflow / retina-face，因为它们在 Colab(Python 3.12) 下最容易失败；
 # - 默认不安装 torch / torchvision，优先复用 Colab 预装版本；
 # - 默认不安装 MobileSAM / optimum-quanto / torchao，减少首轮环境冲突。
+# - facenet-pytorch==2.6.0 约束 Pillow<10.3，因此这里与本地版分开处理。
 
 # 基础
 numpy==1.26.4
 opencv-python==4.10.0.84
 mediapipe==0.10.14
 requests>=2.31,<3.0
-Pillow>=10.4,<12.0
+Pillow>=10.2,<10.3
 
 # 检测侧（不依赖 TensorFlow）
 facenet-pytorch==2.6.0
