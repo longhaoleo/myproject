@@ -1,4 +1,4 @@
-# face_detection 模块说明
+# detection 模块说明
 
 该目录包含三个核心流程：
 
@@ -7,11 +7,13 @@
 3. SAM 分割批处理：`sam_mask.py`
 4. 分割模块：`segmentation.py`（供 `sam_mask.py` 调用）
 
-统一入口：`python face_detection_batch.py`
+统一入口：`python detection_batch.py`
 
-配置集中管理：`face_detection/settings.py`
+配置集中管理：`detection/settings.py`
 - 三个流程共用的默认路径、检测器阈值、视角缩放/偏移都在这里；
 - 各流程仍可在自己的文件里覆盖（例如只改 `sam_mask.py` 的视角参数）。
+- 方形放大的头部 `face_mask`、连续鼻嘴 `inpaint_mask`、`feather_mask`、`eye_privacy_mask`、`sanitized` 图与 `manifest` 由 `prepare_dataset.py` 负责生成；`depth` 目前保留为可选扩展。
+- generation 侧不负责定义 mask 区域，只直接消费 detection 侧落盘结果。
 
 ---
 
@@ -200,7 +202,7 @@ python -m pip install /tmp/MobileSAM.zip
 
 ## 3. 运行方式
 
-在 `face_detection_batch.py` 里设置：
+在 `detection_batch.py` 里设置：
 
 - `RUN_MODE = "detect_compare"`：检测可视化
 - `RUN_MODE = "eye_mask"`：眼部打码
@@ -209,24 +211,40 @@ python -m pip install /tmp/MobileSAM.zip
 然后执行：
 
 ```bash
-python face_detection_batch.py
+python detection_batch.py
 ```
 
 如果你要在 `test.ipynb` 里直接跑，不需要额外接口，直接 import 现有模块：
 
 ```python
-from face_detection.batch import main as run_detect_compare
-from face_detection.masking import main as run_eye_mask
-from face_detection.sam_mask import main as run_sam_mask
+from detection.batch import main as run_detect_compare
+from detection.masking import main as run_eye_mask
+from detection.sam_mask import main as run_sam_mask
 
 run_detect_compare()  # 或 run_eye_mask() / run_sam_mask()
 ```
+
+如需给 generation 准备输入条件，直接调用：
+
+```python
+from detection.prepare_dataset import prepare_dataset
+
+prepare_dataset()
+```
+
+`prepare_dataset.py` 的职责：
+
+1. detection 侧定义并落盘编辑区域，不由 generation 侧反推。
+2. `face` 会被整理成更大的方形头框，作为后续头部参考区域。
+3. 鼻子和嘴巴会合成为一块连续的 `inpaint_mask`，中间无缝桥接。
+4. 眼部隐私 mask 会整体避开这块连续鼻嘴编辑区，并单独输出为图。
+5. generation 后续直接读取 `sanitized` 图、`inpaint_mask` 和 `eye_privacy_mask` 进入训练或推理。
 
 ---
 
 ## 3.1 统一配置位置
 
-`face_detection/settings.py` 里集中维护：
+`detection/settings.py` 里集中维护：
 - `default_paths()`：输入/输出/模型目录
 - `default_min_confidence_map()`：检测器阈值
 - `default_detector_options()`：检测器专属参数
@@ -243,7 +261,7 @@ run_detect_compare()  # 或 run_eye_mask() / run_sam_mask()
 
 ## 4. 检测对比配置
 
-配置文件：`face_detection/batch.py`
+配置文件：`detection/batch.py`
 
 - `detectors_to_run`：本次运行的检测器列表
 - `min_confidence_map`：各检测器阈值
@@ -259,7 +277,7 @@ run_detect_compare()  # 或 run_eye_mask() / run_sam_mask()
 注意：当前仓库里 `detectors_to_run` 是示例配置，你可以按实验需要随时取消注释或增删检测器。
 说明：默认关闭分割。你开启 `enable_segmentation_refine=True` 后，系统会用人脸框与关键点生成部位提示框，并调用 MobileSAM 做 face/eyes/nose/mouth 分割。
 
-最小开启示例（`face_detection/batch.py`）：
+最小开启示例（`detection/batch.py`）：
 
 ```python
 enable_segmentation_refine = True
@@ -287,7 +305,7 @@ draw_segmentation_parts = True
 
 ## 5. SAM 分割流程配置
 
-配置文件：`face_detection/sam_mask.py`
+配置文件：`detection/sam_mask.py`
 
 - `detector_name`：用哪个检测器给 SAM 提示框（建议 `mediapipe-landmarker`）
 - `prompt_source`：提示来源（`detector` 直接检测 / `cache` 复用历史检测结果）
@@ -303,7 +321,7 @@ draw_segmentation_parts = True
 
 ## 6. 所有检测器的加载方式（逐个说明）
 
-统一入口在 `face_detection/factory.py` 的 `create_face_detector(...)`，按名称分发到各后端类。
+统一入口在 `detection/factory.py` 的 `create_face_detector(...)`，按名称分发到各后端类。
 
 ### 6.1 `mtcnn`
 
@@ -404,8 +422,8 @@ PY
 
 ## 7. 代码定位（便于你后续改）
 
-- 工厂分发：`face_detection/factory.py`
-- 各检测器实现：`face_detection/backends.py`
-- SAM 批处理：`face_detection/sam_mask.py`
-- 分割模块（SAM）：`face_detection/segmentation.py`
-- 运行列表与阈值：`face_detection/batch.py` 里的 `detectors_to_run`、`min_confidence_map`
+- 工厂分发：`detection/factory.py`
+- 各检测器实现：`detection/backends.py`
+- SAM 批处理：`detection/sam_mask.py`
+- 分割模块（SAM）：`detection/segmentation.py`
+- 运行列表与阈值：`detection/batch.py` 里的 `detectors_to_run`、`min_confidence_map`

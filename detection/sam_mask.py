@@ -20,7 +20,6 @@ from typing import Any
 import cv2
 import numpy as np
 
-from .dataset_utils import iter_images, pick_random_groups, sort_key
 from .factory import create_face_detector, supported_detector_names
 from .segmentation import PART_NAMES, create_face_segmenter
 from .settings import (
@@ -32,6 +31,7 @@ from .settings import (
 )
 from .types import FaceDetection
 from .visualize import draw_face_detections
+from project_utils.dataset import iter_images, pick_random_groups, sort_key
 
 
 def _write_lines(file_path: Path, lines: list[str]) -> None:

@@ -12,11 +12,11 @@ from typing import Any
 
 import cv2
 
-from .dataset_utils import iter_images, pick_random_groups, sort_key
 from .factory import create_face_detector, supported_detector_names
 from .segmentation import FaceSegmenter, create_face_segmenter
 from .settings import default_detector_options, default_min_confidence_map, default_paths
 from .visualize import draw_face_detections
+from project_utils.dataset import iter_images, pick_random_groups, sort_key
 
 
 def _format_faces(detections) -> str:

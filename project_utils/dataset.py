@@ -1,9 +1,13 @@
 """
-数据集遍历与排序工具。
+项目级数据集工具。
 
-用于按“人编号 -> 术前/术后 -> 文件名”稳定排序，
-避免出现 1,10,100 这种纯字符串排序问题。
+目标：
+- 统一所有图片树的遍历方式；
+- 统一 `病例 -> 阶段 -> 文件名` 的自然排序规则；
+- 统一“按病例组抽样”的逻辑。
 """
+
+from __future__ import annotations
 
 from pathlib import Path
 import random
@@ -15,8 +19,7 @@ STAGE_ORDER = {"术前": 0, "术后": 1}
 
 
 def tokenize(text: str) -> tuple[tuple[int, object], ...]:
-    """把字符串拆成“数字/文本”片段，用于自然排序。"""
-    # 自然排序分词：数字按数值比较，文本按小写比较。
+    """把文本切成“数字块 + 文本块”，供自然排序使用。"""
     parts: list[tuple[int, object]] = []
     for token in re.split(r"(\d+)", text):
         if not token:
@@ -29,8 +32,7 @@ def tokenize(text: str) -> tuple[tuple[int, object], ...]:
 
 
 def sort_key(path: Path, root: Path) -> tuple[object, ...]:
-    """生成排序键：人编号 -> 阶段(术前/术后) -> 文件名。"""
-    # 排序优先级：人编号 -> 阶段(术前/术后) -> 剩余文件路径。
+    """生成统一排序键：病例编号 -> 术前/术后 -> 剩余文件路径。"""
     rel = path.relative_to(root)
     person = rel.parts[0] if len(rel.parts) > 0 else ""
     stage = rel.parts[1] if len(rel.parts) > 1 else ""
@@ -42,23 +44,20 @@ def sort_key(path: Path, root: Path) -> tuple[object, ...]:
 
 
 def iter_images(root: Path):
-    """递归遍历并产出所有图片路径。"""
-    # 递归遍历所有支持的图片后缀。
+    """递归产出目录下的所有图片文件。"""
     for path in root.rglob("*"):
         if path.is_file() and path.suffix.lower() in IMAGE_EXTENSIONS:
             yield path
 
 
 def person_group_name(path: Path, root: Path) -> str:
-    """返回图片所属的“组名”（约定第一层目录）。"""
-    # 约定第一层子目录为“组”（例如 deformity/68/... -> 组名 68）。
+    """返回图片所属病例组名，约定为第一层目录。"""
     rel = path.relative_to(root)
     return rel.parts[0] if rel.parts else ""
 
 
 def group_sort_key(name: str):
-    """组名自然排序键：纯数字按数值排序。"""
-    # 组名自然排序：纯数字按数值，其余按文本。
+    """组名自然排序：纯数字优先按数值，其余按文本。"""
     return (0, int(name)) if name.isdigit() else (1, name.lower())
 
 
@@ -68,7 +67,12 @@ def pick_random_groups(
     random_group_count: int,
     random_seed: int,
 ) -> tuple[list[Path], list[str], int]:
-    """从所有组中随机抽样若干组，只返回这些组内的图片。"""
+    """
+    从病例组中随机抽样若干组。
+
+    这里按第一层目录抽样，而不是按单张图片抽样，
+    目的是保证同一个病例的多张视角图一起进入实验集。
+    """
     groups: set[str] = set()
     for path in image_paths:
         group = person_group_name(path, root)

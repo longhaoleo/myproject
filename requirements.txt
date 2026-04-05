@@ -8,6 +8,7 @@ numpy==1.26.4
 opencv-python==4.10.0.84
 mediapipe==0.10.14
 requests>=2.31,<3.0
+Pillow>=10.4,<12.0
 
 # MTCNN
 torch>=2.1,<2.11
@@ -23,5 +24,15 @@ ultralytics==8.3.0
 gdown>=5.2,<6.0
 
 # SAM（RUN_MODE=sam_mask）
-# 若 git 网络慢，可按 face_detection/README.md 用 zip 本地安装 MobileSAM。
+# 若 git 网络慢，可按 detection/README.md 用 zip 本地安装 MobileSAM。
 git+https://github.com/ChaoningZhang/MobileSAM.git
+
+# SDXL 生成侧（generation_pipeline.py）
+diffusers>=0.31,<0.36
+transformers>=4.44,<4.51
+accelerate>=0.34,<2.0
+peft>=0.12,<0.18
+safetensors>=0.4,<0.6
+huggingface-hub>=0.26,<1.0
+optimum-quanto>=0.2.6,<0.3
+torchao>=0.10,<0.12
