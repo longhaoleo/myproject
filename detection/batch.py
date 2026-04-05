@@ -156,11 +156,11 @@ def main():
     # 要运行的检测器列表（按顺序执行，便于横向比较）
     detectors_to_run = [
         # "retinaface",
-        # "mtcnn",
-        # "scrfd",
-        # "blazeface",
+        "mtcnn",
+        "scrfd",
+        "blazeface",
         # "mediapipe-landmarker",
-        # "yolov8-face",
+        "yolov8-face",
         # "centerface",
     ]
 
@@ -197,7 +197,7 @@ def main():
 
     # 随机抽样组数（按 input_root 第一层子目录计组）：
     # 0 表示不抽样，处理全部组。
-    random_group_count = 20
+    random_group_count = 0
     # 随机种子：保证每次抽样可复现；想每次不一样就改成当前时间戳。
     random_seed = 42
 

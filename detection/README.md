@@ -174,7 +174,6 @@ python -m gdown 'https://drive.google.com/uc?id=1qcr9DbgsX3ryrz2uU8w4Xm3cOrRywXq
 
 ### 2.5 SAM（轻量版，推荐 MobileSAM）
 
-后续你要做精细 mask，可先下载轻量权重到：
 - `model/sam/mobile_sam.pt`
 
 ```bash
