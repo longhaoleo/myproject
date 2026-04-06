@@ -173,11 +173,11 @@ def main():
     # 要运行的检测器列表（按顺序执行，便于横向比较）
     detectors_to_run = [
         # "retinaface",
-        "mtcnn",
-        "scrfd",
-        "blazeface",
+        # "mtcnn",
+        # "scrfd",
+        # "blazeface",
         # "mediapipe-landmarker",
-        "yolov8-face",
+        # "yolov8-face",
         # "centerface",
     ]
 

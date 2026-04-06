@@ -57,6 +57,7 @@ train_lora()
 
 - 当前 `requirements.txt` 已按单环境可安装整理（MediaPipe + TensorFlow 2.15 兼容）。
 - 模型文件默认放在项目根目录 `model/`，并按检测器分子目录。
+- `RetinaFace` 仅建议放在独立环境中做对照实验；不建议作为主工程默认检测器长期维护。需要单独测试时，优先使用 [environment-retinaface.yml](environment-retinaface.yml)。
 - 当前主逻辑是：先得到 `eye_mask` 后的图片，再在 `face` 框内取头部参考区域训练，同时用连续的 `inpaint_mask` 指定鼻嘴重绘目标区域。
 - 连续鼻嘴 `inpaint_mask`、羽化版 `feather_mask` 和标准化 `face_mask` 由 detection 侧直接生成，generation 只消费这些产物。
 - 若已运行 `eye_mask`，generation 会优先读取打码后的图片；否则回退到原图。

@@ -23,6 +23,11 @@
 建议统一使用 `Python 3.10` 的同一个环境（例如 `myenv`），不要混用 `/opt/micromamba/bin/python` 和 conda 环境。
 当前依赖已按“单环境可安装”整理：`mediapipe + tensorflow==2.15.1`，不需要单独安装 `tf-keras`。
 
+补充说明：
+- `RetinaFace` 这条路线依赖较老的 TensorFlow/Keras 生态，环境维护成本高。
+- 如果只是想评估 `RetinaFace` 效果，建议使用独立环境，不要把它作为主工程默认检测器长期维护。
+- 已提供单独环境文件：[environment-retinaface.yml](../environment-retinaface.yml)。
+
 ### 1.1 CPU 环境（默认）
 
 ```bash
@@ -127,6 +132,19 @@ wget -O model/centerface/centerface.onnx \
 ### 2.4 其他模型下载（全部）
 
 #### 2.4.1 RetinaFace
+
+建议：
+- `RetinaFace` 仅用于对照实验时单独测试。
+- 推荐使用独立环境：`environment-retinaface.yml`
+- 不建议把它作为主工程默认检测器长期维护。
+
+独立环境创建示例：
+
+```bash
+cd ~/myproject
+conda env create -f environment-retinaface.yml
+conda activate retinaface-env
+```
 
 ```bash
 mkdir -p model/retinaface
@@ -337,6 +355,10 @@ draw_segmentation_parts = True
 
 - 后端类：`RetinaFaceDetector`
 - 依赖导入：`retinaface`（pip 包名 `retina-face`）
+- 工程建议：
+  - 适合做对照实验
+  - 不建议作为主工程默认检测器
+  - 优先放在独立环境 `retinaface-env` 中运行
 - 加载方式：
   - 设置 `DEEPFACE_HOME = model/retinaface`
   - RetinaFace 期望权重路径是 `model/retinaface/.deepface/weights/retinaface.h5`

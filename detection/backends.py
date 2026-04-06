@@ -138,6 +138,10 @@ class RetinaFaceDetector(BaseDetector):
         """初始化 RetinaFace，并设置权重目录映射。"""
         super().__init__(detector_name="RetinaFace")
         try:
+            # 先显式导入 tensorflow。
+            # 某些 retina-face 版本在未先导入 tensorflow 时，
+            # 会错误地报 `No module named tensorflow.keras`。
+            import tensorflow as tf  # noqa: F401
             from retinaface import RetinaFace
         except ImportError as exc:
             raise ImportError("RetinaFace 需要安装 retina-face（导入名为 retinaface）。") from exc
