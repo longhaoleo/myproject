@@ -33,6 +33,11 @@ MANIFEST_FIELDS = (
     "depth_path",
     "doctor_token",
     "view_token",
+    "available_pre_views",
+    "available_post_views",
+    "paired_views",
+    "paired_view_count",
+    "is_paired_view",
     "split",
 )
 
@@ -61,6 +66,17 @@ def _image_output_path(root: Path, rel_path: Path) -> Path:
 
 def _existing_path(path: Path) -> str | None:
     return str(path) if path.exists() else None
+
+
+def _view_sort_key(view_id: str) -> tuple[int, int | str]:
+    text = str(view_id)
+    if text.isdigit():
+        return 0, int(text)
+    return 1, text
+
+
+def _sorted_views(views: set[str]) -> list[str]:
+    return sorted((str(view_id) for view_id in views), key=_view_sort_key)
 
 
 def _preferred_image_path(paths: GenerationPaths, rel_path: Path) -> tuple[Path, str | None]:
@@ -117,6 +133,11 @@ def build_generation_manifest(
     samples_by_key = {_sample_key(path, paths.input_root): path for path in valid_images}
     case_ids = sorted({key[0] for key in samples_by_key})
     split_map = _build_case_split(case_ids, train_ratio, val_ratio, split_seed)
+    pre_views_by_case: dict[str, set[str]] = {}
+    post_views_by_case: dict[str, set[str]] = {}
+    for case_id, stage, view_id in samples_by_key:
+        target = pre_views_by_case if stage == "术前" else post_views_by_case
+        target.setdefault(case_id, set()).add(str(view_id))
 
     manifest_rows: list[dict[str, Any]] = []
     for key in sorted(samples_by_key):
@@ -137,6 +158,12 @@ def build_generation_manifest(
             paired_post_rel = paired_post.relative_to(paths.input_root)
             paired_post_path = str(_preferred_image_path(paths, paired_post_rel)[0])
 
+        available_pre_views = _sorted_views(pre_views_by_case.get(case_id, set()))
+        available_post_views = _sorted_views(post_views_by_case.get(case_id, set()))
+        # manifest 保持逐图输出，但同时附带病例级视角信息，
+        # 方便 generation 侧直接处理缺视角和 paired/unpaired 逻辑。
+        paired_views = [view for view in available_pre_views if view in set(available_post_views)]
+
         row = {
             "case_id": case_id,
             "view_id": view_id,
@@ -155,6 +182,11 @@ def build_generation_manifest(
             "depth_path": _existing_path(_png_path(paths.depth_root, rel_path)),
             "doctor_token": doctor_token,
             "view_token": f"{view_token_prefix}{view_id}",
+            "available_pre_views": available_pre_views,
+            "available_post_views": available_post_views,
+            "paired_views": paired_views,
+            "paired_view_count": len(paired_views),
+            "is_paired_view": str(view_id) in set(paired_views),
             "split": split_map.get(case_id, "train"),
         }
         manifest_rows.append({name: row.get(name) for name in MANIFEST_FIELDS})

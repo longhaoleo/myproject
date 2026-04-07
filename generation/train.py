@@ -3,13 +3,14 @@ SDXL Inpainting LoRA 训练。
 
 默认策略：
 - 只训练 UNet LoRA；
-- 样本来自术后图；
-- 同时使用头部参考图和鼻嘴联合 crop 图；
+- 样本以术前视角为锚点，目标是同视角术后图；
+- 同时使用头部参考图、鼻嘴联合 crop 图和单边样本自重建图；
 - 不训练 ControlNet。
 """
 
 from __future__ import annotations
 
+from collections import defaultdict
 from dataclasses import dataclass
 import json
 import math
@@ -21,7 +22,7 @@ import cv2
 import numpy as np
 from PIL import Image, ImageOps
 
-from project_utils.io import load_jsonl, write_json
+from project_utils.io import write_json
 from .index import build_generation_manifest, part_mask_path
 from .settings import (
     GenerationPaths,
@@ -41,6 +42,18 @@ def _resolve_rel_path(paths: GenerationPaths, sample_path: str | Path) -> Path:
         except ValueError:
             continue
     raise ValueError(f"无法解析相对路径: {path}")
+
+
+def _row_image_path(row: dict[str, Any]) -> str:
+    return str(row.get("sanitized_image_path") or row.get("image_path") or "").strip()
+
+
+def _view_sort_key(view_id: str) -> tuple[int, int | str]:
+    text = str(view_id)
+    if text.isdigit():
+        return 0, int(text)
+    return 1, text
+
 
 def _load_mask_bbox(path: Path) -> tuple[int, int, int, int] | None:
     if not path.exists():
@@ -94,7 +107,10 @@ def _mask_to_tensor(mask: Image.Image, resolution: int):
 
 @dataclass
 class _TrainSample:
-    image_path: str
+    case_id: str
+    view_id: str
+    condition_image_path: str
+    target_image_path: str
     inpaint_mask_path: str
     prompt: str
     sample_type: str
@@ -114,16 +130,21 @@ class _SdxlLoRADataset:
 
     def __getitem__(self, index: int) -> dict[str, Any]:
         sample = self.samples[index]
-        image = Image.open(sample.image_path).convert("RGB")
+        condition_image = Image.open(sample.condition_image_path).convert("RGB")
+        target_image = Image.open(sample.target_image_path).convert("RGB")
         mask = Image.open(sample.inpaint_mask_path).convert("L")
         if sample.crop_box is not None:
-            image = image.crop(sample.crop_box)
+            condition_image = condition_image.crop(sample.crop_box)
+            target_image = target_image.crop(sample.crop_box)
             mask = mask.crop(sample.crop_box)
-        tensor = _image_to_tensor(image, self.resolution)
+        condition_tensor = _image_to_tensor(condition_image, self.resolution)
+        target_tensor = _image_to_tensor(target_image, self.resolution)
         mask_tensor = _mask_to_tensor(mask, self.resolution)
-        masked_tensor = tensor * (mask_tensor < 0.5)
+        # paired 训练时，target_tensor 是术后目标图；
+        # masked_tensor 始终来自条件图，并把编辑区域按 inpaint mask 挖空。
+        masked_tensor = condition_tensor * (mask_tensor < 0.5)
         return {
-            "pixel_values": tensor,
+            "pixel_values": target_tensor,
             "mask_values": mask_tensor,
             "masked_pixel_values": masked_tensor,
             "prompt": sample.prompt,
@@ -153,20 +174,21 @@ def _build_training_samples(
     """
     从 manifest 构造训练样本。
 
-    当前固定两类样本：
-    - head_reference：用 face 框内区域学习整体头部/姿态参考
-    - edit_crop：用鼻嘴局部区域学习目标重绘区域的形态偏好
+    当前固定三类样本：
+    - paired_head_reference：同视角术前 -> 术后，学习头部整体稳定性
+    - paired_edit_crop：同视角术前 -> 术后，学习鼻嘴目标重绘区域
+    - self_identity_head：单边缺视角时的自重建样本，避免浪费小样本
     """
     samples: list[_TrainSample] = []
     for row in manifest_rows:
-        if row.get("stage") != "术后":
-            continue
         if row.get("split") != "train":
             continue
-        # 训练输入图优先使用 eye_mask 后的图片；没有则回退原图。
-        image_path = str(row.get("sanitized_image_path") or row.get("image_path") or "").strip()
+        case_id = str(row.get("case_id") or "").strip()
+        view_id = str(row.get("view_id") or "").strip()
+        image_path = _row_image_path(row)
         inpaint_mask_path = str(row.get("inpaint_mask_path") or "").strip()
-        if not image_path or not inpaint_mask_path:
+        face_mask_path = str(row.get("face_mask_path") or "").strip()
+        if not image_path or not inpaint_mask_path or not face_mask_path:
             continue
         prompt = ", ".join(
             part
@@ -177,51 +199,138 @@ def _build_training_samples(
             )
             if part
         )
-        face_box = _load_mask_bbox(Path(str(row.get("face_mask_path") or "")))
-        samples.append(
-            _TrainSample(
-                image_path=image_path,
-                inpaint_mask_path=inpaint_mask_path,
-                prompt=prompt,
-                sample_type="head_reference",
-                weight=config.full_face_weight,
-                crop_box=face_box,
-            )
-        )
+        face_box = _load_mask_bbox(Path(face_mask_path))
+        if face_box is None:
+            continue
 
         rel_path = _resolve_rel_path(paths, image_path)
         nose_box = _load_mask_bbox(Path(str(row.get("nose_mask_path") or "")))
         mouth_box = _load_mask_bbox(part_mask_path(paths, "mouth", rel_path))
-        if nose_box is None and mouth_box is None:
-            continue
-
         image = Image.open(image_path).convert("RGB")
         width, height = image.size
-        boxes = [box for box in (nose_box, mouth_box) if box is not None]
-        x1 = min(box[0] for box in boxes)
-        y1 = min(box[1] for box in boxes)
-        x2 = max(box[2] for box in boxes)
-        y2 = max(box[3] for box in boxes)
-        # 鼻子和嘴巴一起裁成局部样本，并用同一张 inpaint_mask 指定重绘目标区域。
-        crop_box = _expand_box(
-            (x1, y1, x2, y2),
-            width=width,
-            height=height,
-            context_ratio=config.crop_context_ratio,
-        )
-        if crop_box is None:
+        is_paired_view = bool(row.get("is_paired_view"))
+        stage = str(row.get("stage") or "")
+        paired_post_path = str(row.get("paired_post_path") or "").strip()
+
+        if stage == "术前" and is_paired_view and paired_post_path:
+            samples.append(
+                _TrainSample(
+                    case_id=case_id,
+                    view_id=view_id,
+                    condition_image_path=image_path,
+                    target_image_path=paired_post_path,
+                    inpaint_mask_path=inpaint_mask_path,
+                    prompt=prompt,
+                    sample_type="paired_head_reference",
+                    weight=config.paired_head_weight,
+                    crop_box=face_box,
+                )
+            )
+
+            boxes = [box for box in (nose_box, mouth_box) if box is not None]
+            if boxes:
+                x1 = min(box[0] for box in boxes)
+                y1 = min(box[1] for box in boxes)
+                x2 = max(box[2] for box in boxes)
+                y2 = max(box[3] for box in boxes)
+                # 鼻子和嘴巴共用一张连续 inpaint mask，并在局部 crop 中强化医生风格。
+                crop_box = _expand_box(
+                    (x1, y1, x2, y2),
+                    width=width,
+                    height=height,
+                    context_ratio=config.crop_context_ratio,
+                )
+                if crop_box is not None:
+                    samples.append(
+                        _TrainSample(
+                            case_id=case_id,
+                            view_id=view_id,
+                            condition_image_path=image_path,
+                            target_image_path=paired_post_path,
+                            inpaint_mask_path=inpaint_mask_path,
+                            prompt=prompt,
+                            sample_type="paired_edit_crop",
+                            weight=config.paired_edit_weight,
+                            crop_box=crop_box,
+                        )
+                    )
             continue
+
+        if not config.allow_unpaired_self_reconstruction or is_paired_view:
+            continue
+
         samples.append(
             _TrainSample(
-                image_path=image_path,
+                case_id=case_id,
+                view_id=view_id,
+                condition_image_path=image_path,
+                target_image_path=image_path,
                 inpaint_mask_path=inpaint_mask_path,
                 prompt=prompt,
-                sample_type="edit_crop",
-                weight=config.nose_mouth_crop_weight,
-                crop_box=crop_box,
+                sample_type="self_identity_head",
+                weight=config.self_identity_weight,
+                crop_box=face_box,
             )
         )
     return samples
+
+
+def _order_train_samples_for_cases(
+    samples: list[_TrainSample],
+    config: LoRATrainConfig,
+) -> list[_TrainSample]:
+    if not config.use_case_grouped_sampling or len(samples) <= 1:
+        return samples
+
+    rng = random.Random(config.seed)
+    paired_views_by_case: dict[str, dict[str, dict[str, _TrainSample]]] = defaultdict(dict)
+    self_samples_by_case: dict[str, list[_TrainSample]] = defaultdict(list)
+    case_ids: set[str] = set()
+
+    for sample in samples:
+        case_ids.add(sample.case_id)
+        if sample.sample_type == "self_identity_head":
+            self_samples_by_case[sample.case_id].append(sample)
+            continue
+        paired_views_by_case[sample.case_id].setdefault(sample.view_id, {})[sample.sample_type] = sample
+
+    for case_id in self_samples_by_case:
+        self_samples_by_case[case_id].sort(key=lambda item: _view_sort_key(item.view_id))
+
+    paired_view_queue: dict[str, list[str]] = {}
+    for case_id, view_map in paired_views_by_case.items():
+        view_ids = sorted(view_map, key=_view_sort_key)
+        rng.shuffle(view_ids)
+        paired_view_queue[case_id] = view_ids
+
+    ordered: list[_TrainSample] = []
+    while True:
+        active_cases = [
+            case_id
+            for case_id in case_ids
+            if paired_view_queue.get(case_id) or self_samples_by_case.get(case_id)
+        ]
+        if not active_cases:
+            break
+        rng.shuffle(active_cases)
+        for case_id in active_cases:
+            selected_views = 0
+            # v1 不额外引入同病例联合损失，先通过顺序采样让一次梯度累积尽量看到
+            # 同一个人的多个视角，减少完整六视角病例被“按图片数放大”的问题。
+            while selected_views < max(1, config.views_per_case_step) and paired_view_queue.get(case_id):
+                view_id = paired_view_queue[case_id].pop(0)
+                sample_map = paired_views_by_case[case_id].get(view_id, {})
+                head_sample = sample_map.get("paired_head_reference")
+                edit_sample = sample_map.get("paired_edit_crop")
+                if head_sample is not None:
+                    ordered.append(head_sample)
+                if edit_sample is not None:
+                    ordered.append(edit_sample)
+                selected_views += 1
+            while selected_views < max(1, config.views_per_case_step) and self_samples_by_case.get(case_id):
+                ordered.append(self_samples_by_case[case_id].pop(0))
+                selected_views += 1
+    return ordered
 
 
 def _torch_dtype(name: str, device: torch.device) -> torch.dtype:
@@ -303,7 +412,7 @@ def train_lora(
     paths = paths or default_generation_paths()
     config = config or default_lora_train_config()
     manifest_rows = build_generation_manifest(paths)
-    train_samples = _build_training_samples(manifest_rows, paths, config)
+    train_samples = _order_train_samples_for_cases(_build_training_samples(manifest_rows, paths, config), config)
     if not train_samples:
         raise RuntimeError("没有可用的训练样本，请先完成 detection 侧产物生成并检查 manifest。")
 
@@ -373,7 +482,7 @@ def train_lora(
     dataloader = DataLoader(
         dataset,
         batch_size=config.train_batch_size,
-        shuffle=True,
+        shuffle=not config.use_case_grouped_sampling,
         num_workers=config.num_workers,
         collate_fn=_collate_fn,
     )
@@ -485,7 +594,10 @@ def train_lora(
             f.write(
                 json.dumps(
                     {
-                        "image_path": sample.image_path,
+                        "case_id": sample.case_id,
+                        "view_id": sample.view_id,
+                        "condition_image_path": sample.condition_image_path,
+                        "target_image_path": sample.target_image_path,
                         "inpaint_mask_path": sample.inpaint_mask_path,
                         "prompt": sample.prompt,
                         "sample_type": sample.sample_type,
@@ -497,9 +609,14 @@ def train_lora(
                 + "\n"
             )
 
+    sample_type_counts: dict[str, int] = {}
+    for sample in train_samples:
+        sample_type_counts[sample.sample_type] = sample_type_counts.get(sample.sample_type, 0) + 1
+
     summary = {
         "training_mode": "sdxl_inpainting_lora",
         "train_samples": len(train_samples),
+        "sample_type_counts": sample_type_counts,
         "epochs": num_epochs,
         "max_train_steps": max_train_steps,
         "completed_steps": global_step,

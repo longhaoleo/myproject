@@ -10,7 +10,7 @@ import numpy as np
 
 from generation.eval import run_evaluation
 from generation.index import build_generation_manifest
-from generation.infer import _normalized_quant_components
+from generation.infer import _generator_seed, _normalized_quant_components
 from generation.settings import GenerationPaths, InferenceConfig, LoRATrainConfig
 from generation.train import _build_training_samples
 
@@ -63,6 +63,9 @@ class GenerationPipelineTest(unittest.TestCase):
             Path("1/术前/1.png"),
             Path("1/术后/1.png"),
             Path("1/术前/2.png"),
+            Path("1/术后/2.png"),
+            Path("1/术前/3.png"),
+            Path("1/术后/4.png"),
         ]
         part_boxes = {
             "face": (8, 8, 56, 56),
@@ -73,6 +76,7 @@ class GenerationPipelineTest(unittest.TestCase):
         }
         for rel in rel_paths:
             _write_image(self.input_root / rel)
+            _write_image(self.paths.sanitized_root / rel, color=120)
             for part_name, box in part_boxes.items():
                 _write_mask(self.sam_root / "parts" / part_name / rel.with_suffix(".png"), box)
             _write_mask(self.sam_root / "inpaint_mask" / rel.with_suffix(".png"), (20, 24, 44, 50))
@@ -82,7 +86,7 @@ class GenerationPipelineTest(unittest.TestCase):
         self._seed_case()
         rows = build_generation_manifest(paths=self.paths)
 
-        self.assertEqual(len(rows), 3)
+        self.assertEqual(len(rows), 6)
         self.assertTrue((self.paths.manifest_path).exists())
 
         rows = [
@@ -92,10 +96,14 @@ class GenerationPipelineTest(unittest.TestCase):
         ]
         self.assertEqual(rows[0]["doctor_token"], "dr_style")
         self.assertEqual(rows[0]["view_token"], "view_1")
-        self.assertIsNone(rows[0]["sanitized_image_path"])
-        self.assertTrue(rows[0]["image_path"].endswith("1/术前/1.png"))
+        self.assertTrue(rows[0]["image_path"].endswith("/prepared/sanitized/1/术前/1.png"))
         self.assertTrue(rows[0]["inpaint_mask_path"].endswith("1/术前/1.png"))
         self.assertTrue(rows[0]["face_mask_path"].endswith("1/术前/1.png"))
+        self.assertEqual(rows[0]["available_pre_views"], ["1", "2", "3"])
+        self.assertEqual(rows[0]["available_post_views"], ["1", "2", "4"])
+        self.assertEqual(rows[0]["paired_views"], ["1", "2"])
+        self.assertEqual(rows[0]["paired_view_count"], 2)
+        self.assertTrue(rows[0]["is_paired_view"])
 
         inpaint_mask = cv2.imread(
             str(self.sam_root / "inpaint_mask" / "1/术前/1.png"),
@@ -116,15 +124,23 @@ class GenerationPipelineTest(unittest.TestCase):
     def test_evaluate_counts_existing_inference_outputs(self) -> None:
         self._seed_case()
 
-        rel = Path("1/术前/1.png")
-        composite_path = self.paths.inference_root / "composited" / rel
-        composite_path.parent.mkdir(parents=True, exist_ok=True)
-        _write_image(composite_path, color=100)
+        for rel in (Path("1/术前/1.png"), Path("1/术前/2.png"), Path("1/术前/3.png")):
+            composite_path = self.paths.inference_root / "composited" / rel
+            composite_path.parent.mkdir(parents=True, exist_ok=True)
+            _write_image(composite_path, color=100)
 
         summary = run_evaluation(paths=self.paths, max_triptychs=10)
         self.assertGreaterEqual(summary["paired_ok"], 2)
-        self.assertEqual(summary["inference_ok"], 1)
-        self.assertTrue((self.paths.eval_root / "triptychs" / rel).exists())
+        self.assertEqual(summary["paired_view_count"], 2)
+        self.assertEqual(summary["unpaired_pre_view_count"], 1)
+        self.assertEqual(summary["unpaired_post_view_count"], 1)
+        self.assertEqual(summary["inference_ok"], 3)
+        self.assertEqual(summary["predicted_view_count"], 3)
+        self.assertEqual(summary["triptych_count"], 2)
+        self.assertIsNotNone(summary["hard_identity_similarity"])
+        self.assertIsNotNone(summary["soft_face_similarity"])
+        self.assertTrue((self.paths.eval_root / "triptychs" / Path("1/术前/1.png")).exists())
+        self.assertTrue((self.paths.eval_root / "case_sheets" / "1.png").exists())
 
     def test_inference_quant_components_are_normalized(self) -> None:
         config = InferenceConfig(
@@ -135,15 +151,26 @@ class GenerationPipelineTest(unittest.TestCase):
             ("unet", "controlnet", "text_encoder"),
         )
 
-    def test_training_samples_use_sanitized_image_and_inpaint_mask(self) -> None:
+    def test_inference_seed_is_stable_by_case_and_view(self) -> None:
+        config = InferenceConfig(seed=7, shared_case_seed=True, case_seed_stride=1000)
+        row_a = {"case_id": "1", "view_id": "1"}
+        row_b = {"case_id": "1", "view_id": "2"}
+        self.assertEqual(_generator_seed(row_a, config, 0), _generator_seed(row_a, config, 9))
+        self.assertNotEqual(_generator_seed(row_a, config, 0), _generator_seed(row_b, config, 0))
+
+    def test_training_samples_use_masked_inputs_and_unpaired_self_reconstruction(self) -> None:
         self._seed_case()
         rows = build_generation_manifest(paths=self.paths)
         samples = _build_training_samples(rows, self.paths, LoRATrainConfig())
-        self.assertEqual(len(samples), 2)
-        self.assertEqual([sample.sample_type for sample in samples], ["head_reference", "edit_crop"])
+        self.assertEqual(len(samples), 6)
+        sample_types = [sample.sample_type for sample in samples]
+        self.assertEqual(sample_types.count("paired_head_reference"), 2)
+        self.assertEqual(sample_types.count("paired_edit_crop"), 2)
+        self.assertEqual(sample_types.count("self_identity_head"), 2)
         for sample in samples:
-            self.assertIn("/input/", sample.image_path)
+            self.assertIn("/prepared/sanitized/", sample.condition_image_path)
             self.assertIn("/inpaint_mask/", sample.inpaint_mask_path)
+        self.assertTrue(any(sample.condition_image_path == sample.target_image_path for sample in samples if sample.sample_type == "self_identity_head"))
 
 
 if __name__ == "__main__":

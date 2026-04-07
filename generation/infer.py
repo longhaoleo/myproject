@@ -7,6 +7,7 @@ SDXL 推理。
 
 from __future__ import annotations
 
+import hashlib
 import json
 from pathlib import Path
 from typing import Any
@@ -57,6 +58,18 @@ def _load_gray_image(path: str | Path) -> Image.Image:
     return Image.open(path).convert("L")
 
 
+def _load_mask_bbox(path: Path) -> tuple[int, int, int, int] | None:
+    if not path.exists():
+        return None
+    mask = cv2.imread(str(path), cv2.IMREAD_GRAYSCALE)
+    if mask is None:
+        return None
+    ys, xs = np.where(mask > 0)
+    if xs.size == 0 or ys.size == 0:
+        return None
+    return int(xs.min()), int(ys.min()), int(xs.max()) + 1, int(ys.max()) + 1
+
+
 def _apply_privacy_fill(image_bgr: np.ndarray, mask: np.ndarray, fill_mode: str) -> np.ndarray:
     if not mask.any():
         return image_bgr.copy()
@@ -84,6 +97,47 @@ def _blur_mask(mask: np.ndarray, blur_px: int) -> np.ndarray:
     if kernel % 2 == 0:
         kernel += 1
     return cv2.GaussianBlur(mask.astype(np.uint8) * 255, (kernel, kernel), 0)
+
+
+def _stable_seed(parts: tuple[Any, ...], modulo: int = 2**31 - 1) -> int:
+    joined = "::".join(str(part) for part in parts).encode("utf-8")
+    digest = hashlib.sha256(joined).digest()
+    return int.from_bytes(digest[:8], "big") % modulo
+
+
+def _generator_seed(row: dict[str, Any], config: InferenceConfig, index: int) -> int:
+    if not config.shared_case_seed:
+        return int(config.seed + index)
+    case_hash = _stable_seed(("case", row.get("case_id", "")))
+    view_hash = _stable_seed(("view", row.get("view_id", "")))
+    return int((config.seed + case_hash * max(1, config.case_seed_stride) + view_hash) % (2**31 - 1))
+
+
+def _crop_box_or_full(
+    image_shape: tuple[int, int],
+    face_box: tuple[int, int, int, int] | None,
+) -> tuple[int, int, int, int]:
+    height, width = image_shape[:2]
+    if face_box is None:
+        return 0, 0, width, height
+    x1, y1, x2, y2 = face_box
+    return max(0, x1), max(0, y1), min(width, x2), min(height, y2)
+
+
+def _crop_array(array: np.ndarray, box: tuple[int, int, int, int]) -> np.ndarray:
+    x1, y1, x2, y2 = box
+    return array[y1:y2, x1:x2].copy()
+
+
+def _paste_array(
+    base: np.ndarray,
+    crop: np.ndarray,
+    box: tuple[int, int, int, int],
+) -> np.ndarray:
+    x1, y1, x2, y2 = box
+    output = base.copy()
+    output[y1:y2, x1:x2] = crop
+    return output
 
 
 def _composite_with_mask(
@@ -258,7 +312,9 @@ def run_inference(
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     pipe = _load_pipeline(config, device)
 
-    # 推理固定读取 manifest 中的术前多视角样本，并复用 detection 已落盘的 mask 条件。
+    # 推理固定读取术前多视角样本。
+    # 输入图默认已经是 eye_mask 后的主数据；每个视角仍独立 inpaint，
+    # 但种子会按 case_id/view_id 稳定，减小同病例多视角之间的随机漂移。
     input_rows = [row for row in manifest_rows if row.get("stage") == "术前"]
     if config.max_samples > 0:
         input_rows = input_rows[: config.max_samples]
@@ -266,6 +322,7 @@ def run_inference(
     success_count = 0
     failed_count = 0
     issues: list[dict[str, Any]] = []
+    predicted_views_by_case: dict[str, set[str]] = {}
 
     for idx, row in enumerate(input_rows):
         image_path = _row_path(row, "sanitized_image_path", "image_path")
@@ -293,6 +350,7 @@ def run_inference(
         privacy_mask_path = _row_path(row, "eye_privacy_mask_path")
         if privacy_mask_path is None:
             privacy_mask_path = _mask_path(paths.privacy_mask_root, rel_path)
+        face_mask_path = _row_path(row, "face_mask_path")
         depth_path = _row_path(row, "depth_path") or Path("")
 
         missing_depth = config.enable_depth_condition and not depth_path.exists()
@@ -310,6 +368,8 @@ def run_inference(
             continue
 
         base_bgr = cv2.imread(str(image_path))
+        inpaint_mask_u8 = cv2.imread(str(inpaint_mask_path), cv2.IMREAD_GRAYSCALE)
+        feather_mask_u8 = cv2.imread(str(feather_mask_path), cv2.IMREAD_GRAYSCALE)
         if base_bgr is None:
             failed_count += 1
             issues.append(
@@ -317,6 +377,16 @@ def run_inference(
                     "kind": "read_failed",
                     "rel_path": str(rel_path),
                     "image_path": str(image_path),
+                }
+            )
+            continue
+        if inpaint_mask_u8 is None:
+            failed_count += 1
+            issues.append(
+                {
+                    "kind": "mask_read_failed",
+                    "rel_path": str(rel_path),
+                    "mask_path": str(inpaint_mask_path),
                 }
             )
             continue
@@ -330,10 +400,40 @@ def run_inference(
             doctor_token=row.get("doctor_token", "dr_style"),
             view_token=row.get("view_token", ""),
         )
-        generator = torch.Generator(device=device.type).manual_seed(config.seed + idx)
+        generator = torch.Generator(device=device.type).manual_seed(_generator_seed(row, config, idx))
 
-        input_image = Image.fromarray(cv2.cvtColor(base_bgr, cv2.COLOR_BGR2RGB))
-        mask_image = _load_gray_image(inpaint_mask_path)
+        face_box = _crop_box_or_full(
+            base_bgr.shape,
+            _load_mask_bbox(face_mask_path) if face_mask_path is not None else None,
+        )
+        cropped_base_bgr = _crop_array(base_bgr, face_box)
+        cropped_mask_u8 = _crop_array(inpaint_mask_u8, face_box)
+        if not np.any(cropped_mask_u8 > 0):
+            failed_count += 1
+            issues.append(
+                {
+                    "kind": "empty_inpaint_mask",
+                    "rel_path": str(rel_path),
+                    "face_box": list(face_box),
+                }
+            )
+            continue
+
+        if feather_mask_u8 is None:
+            cropped_feather_u8 = _blur_mask(cropped_mask_u8 > 0, config.composite_blur_px)
+        else:
+            cropped_feather_u8 = _crop_array(feather_mask_u8, face_box)
+
+        depth_bgr = np.zeros_like(base_bgr)
+        cropped_depth_bgr = np.zeros_like(cropped_base_bgr)
+        if config.enable_depth_condition and depth_path.exists():
+            loaded_depth_bgr = cv2.imread(str(depth_path))
+            if loaded_depth_bgr is not None:
+                depth_bgr = loaded_depth_bgr
+                cropped_depth_bgr = _crop_array(loaded_depth_bgr, face_box)
+
+        input_image = Image.fromarray(cv2.cvtColor(cropped_base_bgr, cv2.COLOR_BGR2RGB))
+        mask_image = Image.fromarray(cropped_mask_u8)
         pipe_kwargs: dict[str, Any] = {
             "prompt": prompt,
             "negative_prompt": config.negative_prompt,
@@ -348,7 +448,7 @@ def run_inference(
         if config.enable_depth_condition:
             pipe_kwargs.update(
                 {
-                    "control_image": _load_rgb_image(depth_path),
+                    "control_image": Image.fromarray(cv2.cvtColor(cropped_depth_bgr, cv2.COLOR_BGR2RGB)),
                     "controlnet_conditioning_scale": config.controlnet_conditioning_scale,
                     "control_guidance_start": config.control_guidance_start,
                     "control_guidance_end": config.control_guidance_end,
@@ -356,23 +456,12 @@ def run_inference(
             )
         result = pipe(**pipe_kwargs)
         generated_rgb = result.images[0]
-        raw_bgr = cv2.cvtColor(np.asarray(generated_rgb), cv2.COLOR_RGB2BGR)
+        raw_crop_bgr = cv2.cvtColor(np.asarray(generated_rgb), cv2.COLOR_RGB2BGR)
 
-        feather = cv2.imread(str(feather_mask_path), cv2.IMREAD_GRAYSCALE)
-        if feather is None:
-            binary_mask = cv2.imread(str(inpaint_mask_path), cv2.IMREAD_GRAYSCALE)
-            if binary_mask is None:
-                feather = np.zeros(base_bgr.shape[:2], dtype=np.uint8)
-            else:
-                feather = _blur_mask(binary_mask > 0, config.composite_blur_px)
-
-        # 生成器输出是整张图；最终只把鼻嘴联合区域按羽化 alpha 回贴到原图。
-        composite_bgr = _composite_with_mask(base_bgr, raw_bgr, feather)
-        depth_bgr = np.zeros_like(base_bgr)
-        if config.enable_depth_condition and depth_path.exists():
-            loaded_depth_bgr = cv2.imread(str(depth_path))
-            if loaded_depth_bgr is not None:
-                depth_bgr = loaded_depth_bgr
+        # 推理固定在 face crop 内运行，再把局部结果映射回整图。
+        raw_bgr = _paste_array(base_bgr, raw_crop_bgr, face_box)
+        composite_crop_bgr = _composite_with_mask(cropped_base_bgr, raw_crop_bgr, cropped_feather_u8)
+        composite_bgr = _paste_array(base_bgr, composite_crop_bgr, face_box)
 
         raw_path = _mask_path(paths.inference_root / "raw", rel_path)
         raw_path.parent.mkdir(parents=True, exist_ok=True)
@@ -384,17 +473,17 @@ def run_inference(
 
         preview_path = _mask_path(paths.inference_root / "preview", rel_path)
         preview_path.parent.mkdir(parents=True, exist_ok=True)
-        mask_u8 = cv2.imread(str(inpaint_mask_path), cv2.IMREAD_GRAYSCALE)
-        if mask_u8 is None:
-            mask_u8 = np.zeros(base_bgr.shape[:2], dtype=np.uint8)
-        preview = _make_preview(base_bgr, mask_u8, depth_bgr, raw_bgr, composite_bgr)
+        preview = _make_preview(base_bgr, inpaint_mask_u8, depth_bgr, raw_bgr, composite_bgr)
         cv2.imwrite(str(preview_path), preview)
         success_count += 1
+        predicted_views_by_case.setdefault(str(row.get("case_id") or ""), set()).add(str(row.get("view_id") or ""))
 
     summary = {
         "requested_samples": len(input_rows),
         "success_count": success_count,
         "failed_count": failed_count,
+        "predicted_view_count": sum(len(views) for views in predicted_views_by_case.values()),
+        "predicted_cases": sorted(case_id for case_id in predicted_views_by_case if case_id),
         "inference_root": str(paths.inference_root),
         "device": str(device),
         "enable_depth_condition": bool(config.enable_depth_condition),

@@ -64,11 +64,15 @@ class LoRATrainConfig:
     seed: int = 42
     save_every_steps: int = 100
     num_workers: int = 0
-    full_face_weight: float = 1.0
-    nose_mouth_crop_weight: float = 1.25
+    paired_head_weight: float = 1.0
+    paired_edit_weight: float = 1.35
+    self_identity_weight: float = 0.45
     crop_context_ratio: float = 0.35
     caption_suffix: str = "rhinoplasty postoperative portrait"
     apply_eye_privacy_mask: bool = True
+    use_case_grouped_sampling: bool = True
+    views_per_case_step: int = 2
+    allow_unpaired_self_reconstruction: bool = True
 
 
 @dataclass(frozen=True)
@@ -100,6 +104,8 @@ class InferenceConfig:
     apply_eye_privacy_mask: bool = True
     privacy_fill: str = "black"
     composite_blur_px: int = 31
+    shared_case_seed: bool = True
+    case_seed_stride: int = 1000
 
 
 def _path_from_env(name: str, default: Path) -> Path:

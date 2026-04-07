@@ -45,7 +45,7 @@ SAM 部位 mask 沿用 `detection/sam_mask.py` 的输出：
 
 这些规则由 detection 侧生成并落盘，generation 只读取：
 
-1. 训练和推理输入图优先使用 `eye_mask` 后的图片；若未生成，则回退到原图。
+1. 训练和推理默认直接使用 `eye_mask` 后的图片；若未生成，则回退到原图。
 2. `face` 会被整理成标准化头部框，用于头部参考区域裁剪。
 3. 重绘目标区域是连续的 `nose + mouth` 联合 `inpaint_mask`。
 4. `feather_mask` 只用于最终回贴时的羽化混合。
@@ -58,12 +58,15 @@ SAM 部位 mask 沿用 `detection/sam_mask.py` 的输出：
 
 负责：
 
-1. 运行时直接从 detection 输出构建 manifest，并筛选 `术后 + train split` 样本
-2. 同时构建两类训练样本
-   - 方形头部参考图
-   - 鼻嘴联合 crop 图
-3. 优先使用打码图，否则回退到原图；在 `face` 框内取头部参考区域，并结合 `inpaint_mask` 训练 SDXL inpainting UNet LoRA
-4. 落盘 checkpoint、最终 LoRA 权重和训练摘要
+1. 运行时直接从 detection 输出构建 manifest，并按 `case_id` 进行 train / val / test 切分
+2. 主监督固定使用 `术前 -> 同视角术后` 的配对样本，锚点是术前视角
+3. 同时构建三类训练样本
+   - `paired_head_reference`：`face` 框内头部参考图
+   - `paired_edit_crop`：鼻嘴联合 crop 图
+   - `self_identity_head`：单边缺视角时的低权重自重建样本
+4. 默认使用打码图作为条件图和主输入；`face_mask / inpaint_mask / feather_mask` 一律复用 detection 侧产物
+5. 训练顺序默认按病例分组，尽量让同一个人的多个视角落到同一梯度累积周期里
+6. 落盘 checkpoint、最终 LoRA 权重和训练摘要
 
 #### `infer`
 
@@ -71,10 +74,11 @@ SAM 部位 mask 沿用 `detection/sam_mask.py` 的输出：
 
 ```text
 术前图
+-> detection 生成的眼部打码图（主输入）
 -> detection 生成的连续鼻嘴 inpaint mask
--> detection 生成的眼部打码图（若存在）
+-> face crop
 -> SDXL Inpainting + LoRA
--> 整图输出
+-> 映射回整图
 -> 仅按羽化 mask 回贴鼻嘴联合区域
 -> 输出 raw / composited / preview
 ```
@@ -93,8 +97,26 @@ SAM 部位 mask 沿用 `detection/sam_mask.py` 的输出：
 1. 运行时直接从 detection 输出构建 manifest
 2. 统计 nose / face mask 可用率
 3. 若启用了 depth，则统计 depth 可用率
-4. 统计术前图推理输出成功率
-5. 导出 `术前 / 术后 / 生成结果` 三联预览
+4. 统计 paired / unpaired 视角数量、完整六视角病例和部分视角病例
+5. 统计 `hard_identity_similarity` 与 `soft_face_similarity`
+6. 导出 `术前 / 术后 / 生成结果` 三联预览，以及病例级 contact sheet
+
+### 1.4 一致性策略（v1）
+
+当前一致性是轻量方案，不额外引入 identity loss。
+
+固定拆成两层：
+
+1. `hard_identity_region = face_mask - dilated(inpaint_mask)`
+   - 代表非编辑区，要求强一致
+2. `soft_identity_region = face_mask`
+   - 鼻子和嘴巴虽然会变化，但仍保留为弱一致性参考
+
+说明：
+
+1. 训练阶段通过 `paired_head_reference` 和病例级分组采样来稳定人物一致性
+2. 评估阶段通过 `hard_identity_similarity` 和 `soft_face_similarity` 做轻量验收
+3. 这是 v1 的折中方案，后续可以升级为显式的 identity / perceptual consistency loss
 
 ## 2. 依赖安装
 

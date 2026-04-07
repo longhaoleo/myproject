@@ -57,6 +57,7 @@ train_lora()
 
 - 当前 `requirements.txt` 已按单环境可安装整理（MediaPipe + TensorFlow 2.15 兼容）。
 - 模型文件默认放在项目根目录 `model/`，并按检测器分子目录。
-- 当前主逻辑是：先得到 `eye_mask` 后的图片，再在 `face` 框内取头部参考区域训练，同时用连续的 `inpaint_mask` 指定鼻嘴重绘目标区域。
+- 当前主逻辑是：先得到 `eye_mask` 后的图片，把它作为 generation 的主输入；训练时以术前视角为锚点，在 `face` 框内取头部参考区域，同时用连续的 `inpaint_mask` 指定鼻嘴重绘目标区域。
 - 连续鼻嘴 `inpaint_mask`、羽化版 `feather_mask` 和标准化 `face_mask` 由 detection 侧直接生成，generation 只消费这些产物。
-- 若已运行 `eye_mask`，generation 会优先读取打码后的图片；否则回退到原图。
+- 少量缺失术前或术后的视角不会直接丢弃：有配对的视角进入主监督训练，单边缺失的视角会进入低权重的自重建身份样本。
+- 评估会同时输出三联图、病例级 contact sheet，以及 `hard_identity_similarity / soft_face_similarity` 两类轻量一致性指标。
