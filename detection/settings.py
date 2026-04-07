@@ -4,6 +4,11 @@
 说明：
 - 这里放“跨流程通用”的默认值；
 - 各流程仍可在自身文件里按需覆盖。
+
+配置分层：
+- default：所有检测器共享默认参数；
+- <detector>：按检测器覆盖；
+- scale/offset：先分缩放/偏移，再按视角（1~6 / __all__）展开。
 """
 
 from dataclasses import dataclass
@@ -40,18 +45,47 @@ def _normalize_part_map(raw: object) -> dict[str, tuple[float, float]]:
     return {str(name): _normalize_pair(value) for name, value in raw.items()}
 
 
-def _normalize_views(raw_views: object) -> tuple[
+def _normalize_view_map(raw_view_map: object) -> dict[str, dict[str, tuple[float, float]]]:
+    """把 {view_id: {part: (x,y)}} 规范化。"""
+    view_map = raw_view_map if isinstance(raw_view_map, dict) else {}
+    normalized: dict[str, dict[str, tuple[float, float]]] = {}
+    for view_id, part_map in view_map.items():
+        normalized[str(view_id)] = _normalize_part_map(part_map)
+    return normalized
+
+
+def _normalize_profile_tweaks(raw_cfg: object) -> tuple[
     dict[str, dict[str, tuple[float, float]]],
     dict[str, dict[str, tuple[float, float]]],
 ]:
-    views = raw_views if isinstance(raw_views, dict) else {}
+    """
+    解析 profile 的 scale/offset 配置。
+
+    新格式（推荐）：
+    - scale: {view_id: {part: (sx, sy)}}
+    - offset: {view_id: {part: (dx, dy)}}
+
+    兼容旧格式（仅为平滑迁移）：
+    - views: {view_id: {scale: {...}, offset: {...}}}
+
+    返回值：
+    - part_scale_by_view: {view_id: {part_name: (sx, sy)}}
+    - part_offset_by_view: {view_id: {part_name: (dx, dy)}}
+    """
+    cfg = raw_cfg if isinstance(raw_cfg, dict) else {}
+    if isinstance(cfg.get("scale"), dict) or isinstance(cfg.get("offset"), dict):
+        return _normalize_view_map(cfg.get("scale", {})), _normalize_view_map(cfg.get("offset", {}))
+
+    # 旧格式兜底
+    views = cfg.get("views", {}) if isinstance(cfg, dict) else {}
     part_scale_by_view: dict[str, dict[str, tuple[float, float]]] = {}
     part_offset_by_view: dict[str, dict[str, tuple[float, float]]] = {}
-    for view_id, item in views.items():
-        if not isinstance(item, dict):
-            continue
-        part_scale_by_view[str(view_id)] = _normalize_part_map(item.get("scale", {}))
-        part_offset_by_view[str(view_id)] = _normalize_part_map(item.get("offset", {}))
+    if isinstance(views, dict):
+        for view_id, item in views.items():
+            if not isinstance(item, dict):
+                continue
+            part_scale_by_view[str(view_id)] = _normalize_part_map(item.get("scale", {}))
+            part_offset_by_view[str(view_id)] = _normalize_part_map(item.get("offset", {}))
     return part_scale_by_view, part_offset_by_view
 
 
@@ -66,28 +100,43 @@ def _merge_nested_pairs(
     return merged
 
 
-def load_view_tweaks(method_name: str = "") -> ViewTweaks:
-    """读取按方法叠加后的视角微调配置。"""
+def normalize_profile_name(profile_name: str) -> str:
+    """标准化配置 profile 名称（主要用于检测器别名统一）。"""
+    key = str(profile_name).strip().lower().replace("_", "-")
+    alias = {
+        "face-landmarker": "mediapipe-landmarker",
+        "landmarker": "mediapipe-landmarker",
+        "yolov8face": "yolov8-face",
+    }
+    return alias.get(key, key)
+
+
+def load_view_tweaks(profile_name: str = "") -> ViewTweaks:
+    """
+    读取按检测器 profile 叠加后的视角微调配置。
+
+    叠加规则：
+    1. 先读 default；
+    2. 再用 profile 覆盖同名配置；
+    3. 最终由 get_view_scale_map/get_view_offset_map 在运行时处理 __all__ 与具体视角。
+    """
     config = VIEW_TWEAKS_CONFIG
     default_cfg = config.get("default", {})
-    method_cfg = config.get(str(method_name).strip(), {}) if method_name else {}
+    profile_key = normalize_profile_name(profile_name) if profile_name else ""
+    profile_cfg = config.get(profile_key, {}) if profile_key else {}
 
-    base_scale_by_view, base_offset_by_view = _normalize_views(
-        default_cfg.get("views", {}) if isinstance(default_cfg, dict) else {}
-    )
-    method_scale_by_view, method_offset_by_view = _normalize_views(
-        method_cfg.get("views", {}) if isinstance(method_cfg, dict) else {}
-    )
+    base_scale_by_view, base_offset_by_view = _normalize_profile_tweaks(default_cfg)
+    profile_scale_by_view, profile_offset_by_view = _normalize_profile_tweaks(profile_cfg)
 
     part_offset_mode = "ratio"
     if isinstance(default_cfg, dict) and default_cfg.get("part_offset_mode"):
         part_offset_mode = str(default_cfg.get("part_offset_mode")).strip().lower() or part_offset_mode
-    if isinstance(method_cfg, dict) and method_cfg.get("part_offset_mode"):
-        part_offset_mode = str(method_cfg.get("part_offset_mode")).strip().lower() or part_offset_mode
+    if isinstance(profile_cfg, dict) and profile_cfg.get("part_offset_mode"):
+        part_offset_mode = str(profile_cfg.get("part_offset_mode")).strip().lower() or part_offset_mode
 
     return ViewTweaks(
-        part_scale_by_view=_merge_nested_pairs(base_scale_by_view, method_scale_by_view),
-        part_offset_by_view=_merge_nested_pairs(base_offset_by_view, method_offset_by_view),
+        part_scale_by_view=_merge_nested_pairs(base_scale_by_view, profile_scale_by_view),
+        part_offset_by_view=_merge_nested_pairs(base_offset_by_view, profile_offset_by_view),
         part_offset_mode=part_offset_mode,
     )
 
@@ -103,18 +152,29 @@ def get_view_scale_map(
     view_id: str | None,
     part_scale_by_view: dict[str, dict[str, tuple[float, float]]] | None,
 ) -> dict[str, tuple[float, float]]:
-    if not view_id or not part_scale_by_view:
+    """返回当前视角生效的 scale 配置（__all__ + view 覆盖）。"""
+    if not part_scale_by_view:
         return {}
-    return dict(part_scale_by_view.get(str(view_id), {}))
+    # __all__ 是全视角默认值，具体视角会覆盖同名配置。
+    merged = dict(part_scale_by_view.get("__all__", {}))
+    if not view_id:
+        return merged
+    merged.update(part_scale_by_view.get(str(view_id), {}))
+    return merged
 
 
 def get_view_offset_map(
     view_id: str | None,
     part_offset_by_view: dict[str, dict[str, tuple[float, float]]] | None,
 ) -> dict[str, tuple[float, float]]:
-    if not view_id or not part_offset_by_view:
+    """返回当前视角生效的 offset 配置（__all__ + view 覆盖）。"""
+    if not part_offset_by_view:
         return {}
-    return dict(part_offset_by_view.get(str(view_id), {}))
+    merged = dict(part_offset_by_view.get("__all__", {}))
+    if not view_id:
+        return merged
+    merged.update(part_offset_by_view.get(str(view_id), {}))
+    return merged
 
 
 def resolve_part_offset(
@@ -132,6 +192,39 @@ def resolve_part_offset(
     return int(round(float(ox))), int(round(float(oy)))
 
 
+def apply_landmark_offsets(
+    detections: list,
+    view_id: str | None,
+    part_offset_by_view: dict[str, dict[str, tuple[float, float]]] | None,
+    part_offset_mode: str = "ratio",
+) -> None:
+    """
+    把视角偏移直接写回检测结果的 landmarks（原地修改）。
+
+    说明：
+    - 只在 landmarks 存在时生效；
+    - 偏移按人脸框尺寸换算（ratio 模式）；
+    - 设计用途：修正关键点定位，使后续部位框/SAM 提示基于修正后的点位。
+    """
+    if not detections:
+        return
+    offset_map = get_view_offset_map(view_id, part_offset_by_view)
+    if not offset_map:
+        return
+    offset_mode = str(part_offset_mode).strip().lower()
+    for det in detections:
+        if not getattr(det, "landmarks", None):
+            continue
+        x1, y1, x2, y2 = det.box
+        face_w = max(1, x2 - x1)
+        face_h = max(1, y2 - y1)
+        new_landmarks = {}
+        for name, (px, py) in det.landmarks.items():
+            dx, dy = resolve_part_offset(name, offset_map, face_w, face_h, offset_mode)
+            new_landmarks[name] = (int(px + dx), int(py + dy))
+        det.landmarks = new_landmarks
+
+
 def adjust_box_for_view(
     box: tuple[int, int, int, int],
     part_name: str,
@@ -141,16 +234,26 @@ def adjust_box_for_view(
     offset_map: dict[str, tuple[float, float]] | None,
     part_offset_mode: str = "ratio",
 ) -> tuple[int, int, int, int]:
-    """按视角规则调整单个框。"""
+    """
+    按视角规则调整单个框（默认输出方形框）。
+
+    规则：
+    - scale/offset 从 view 配置中读取；
+    - 输出强制方形，用于统一可视化与后续分割提示。
+    """
     x1, y1, x2, y2 = box
     face_w = max(1, x2 - x1)
     face_h = max(1, y2 - y1)
-    sx, sy = (scale_map or {}).get(canonical_part_name(part_name), (1.0, 1.0))
+    canonical_name = canonical_part_name(part_name)
+    # 缩放参数统一从 VIEW_TWEAKS_CONFIG 读取，这里不做 face 放大硬编码。
+    default_scale = (1.0, 1.0)
+    sx, sy = (scale_map or {}).get(canonical_name, default_scale)
     dx, dy = resolve_part_offset(part_name, offset_map, face_w, face_h, part_offset_mode)
     cx = int(round((x1 + x2) / 2 + dx))
     cy = int(round((y1 + y2) / 2 + dy))
-    bw = max(1, int(round(face_w * float(sx))))
-    bh = max(1, int(round(face_h * float(sy))))
+    side = max(face_w * float(sx), face_h * float(sy))
+    bw = max(1, int(round(side)))
+    bh = bw
     nx1 = max(0, cx - bw // 2)
     ny1 = max(0, cy - bh // 2)
     nx2 = min(image_w, nx1 + bw)
@@ -216,99 +319,110 @@ def default_detector_options(model_dir: Path) -> dict[str, dict[str, Any]]:
     }
 
 
-def default_part_scale_by_view(method_name: str = "") -> dict[str, dict[str, tuple[float, float]]]:
-    """按视角缩放部位框（直接从本文件配置读取，可按方法覆盖）。"""
-    return load_view_tweaks(method_name=method_name).part_scale_by_view
+def default_part_scale_by_view(profile_name: str = "") -> dict[str, dict[str, tuple[float, float]]]:
+    """按视角缩放部位框（按检测器 profile 覆盖）。"""
+    return load_view_tweaks(profile_name=profile_name).part_scale_by_view
 
 
-def default_part_offset_by_view(method_name: str = "") -> dict[str, dict[str, tuple[float, float]]]:
-    """按视角偏移部位（直接从本文件配置读取，可按方法覆盖）。"""
-    return load_view_tweaks(method_name=method_name).part_offset_by_view
+def default_part_offset_by_view(profile_name: str = "") -> dict[str, dict[str, tuple[float, float]]]:
+    """按视角偏移部位（按检测器 profile 覆盖）。"""
+    return load_view_tweaks(profile_name=profile_name).part_offset_by_view
 
 
-def default_part_offset_mode(method_name: str = "") -> str:
-    """按视角偏移模式（ratio/pixel，可按方法覆盖）。"""
-    return load_view_tweaks(method_name=method_name).part_offset_mode
+def default_part_offset_mode(profile_name: str = "") -> str:
+    """按视角偏移模式（按检测器 profile 覆盖）。"""
+    return load_view_tweaks(profile_name=profile_name).part_offset_mode
 
 
 # ---------------------------------------------------------------------------
 # View Tweaks Config
 # ---------------------------------------------------------------------------
 # 这块是“纯配置区”：
-# - 顶层按方法分
-# - 方法下面按视角分
-# - default 是所有方法共享的默认值
-# - detect_compare / eye_mask / sam_mask 按需覆盖
+# - 顶层按检测器 profile 分
+# - profile 内先分 scale/offset，再按视角分
+# - default 是所有检测器共享的默认值
+# - mtcnn / scrfd / yolov8-face ... 可按需覆盖
 VIEW_TWEAKS_CONFIG: dict[str, dict[str, Any]] = {
+    # 默认参数根据yolo调整的
     "default": {
         "part_offset_mode": "ratio",
-        "views": {
+        "scale": {
+            "__all__": {
+                # 全局人脸框缩放（人脸框默认就是方形）
+                "face": (1.2, 1.2),
+            },
             "1": {
-                "scale": {
-                    "nose": (1.5, 1.0),
-                    "mouth": (1.2, 1.0),
-                },
+                "nose": (1.5, 1.0),
+                "mouth": (1.2, 1.0),
             },
             "2": {
-                "scale": {
-                    "nose": (1.7, 1.0),
-                    "mouth": (1.5, 1.2),
-                },
-                "offset": {
-                    "nose": (0.03, 0.0),
-                },
+                "nose": (1.7, 1.0),
+                "mouth": (2.2, 1.2),
             },
             "3": {
-                "scale": {
-                    "nose": (1.7, 1.0),
-                    "mouth": (1.5, 1.2),
-                },
-                "offset": {
-                    "nose": (-0.03, 0.0),
-                },
+                "nose": (1.7, 1.0),
+                "mouth": (2.2, 1.2),
             },
             "4": {
-                "scale": {
-                    "nose": (2.0, 1.0),
-                    "mouth": (4.0, 1.2),
-                    "left_eye": (0.85, 0.85),
-                    "right_eye": (0.85, 0.85),
-                },
-                "offset": {
-                    "nose": (0.03, 0.0),
-                },
+                "nose": (2.0, 1.0),
+                "mouth": (4.0, 1.2),
+                "left_eye": (0.85, 0.85),
+                "right_eye": (0.85, 0.85),
             },
             "5": {
-                "scale": {
-                    "nose": (2.0, 1.0),
-                    "mouth": (4.0, 1.2),
-                    "left_eye": (0.85, 0.85),
-                    "right_eye": (0.85, 0.85),
-                },
-                "offset": {
-                    "nose": (-0.03, 0.0),
-                },
+                "nose": (2.0, 1.0),
+                "mouth": (4.0, 1.2),
+                "left_eye": (0.85, 0.85),
+                "right_eye": (0.85, 0.85),
             },
             "6": {
-                "scale": {
-                    "nose": (1.5, 1.5),
-                    "mouth": (1.5, 2.0),
-                    "left_eye": (0.85, 0.85),
-                    "right_eye": (0.85, 0.85),
-                },
+                "nose": (1.5, 1.5),
+                "mouth": (1.5, 2.0),
+                "left_eye": (0.85, 0.85),
+                "right_eye": (0.85, 0.85),
             },
         },
-    },
-    "detect_compare": {
-        "views": {
+        "offset": {
+            # offset 里 y 方向向下是正值，向上是负值。x 方向同理：向右正，向左负。
+            "2": {
+                "nose": (0.10, 0.0),
+            },
+            "3": {
+                "nose": (-0.10, 0.0),
+            },
+            "4": {
+                "nose": (0.10, 0.0),
+            },
+            "5": {
+                "nose": (-0.10, 0.0),
+            },
+            "6": {
+                "nose": (0.0, 0.05),
+            }
         },
     },
-    "eye_mask": {
-        "views": {
-        },
+    "mtcnn": {
+        "scale": {},
+        "offset": {},
     },
-    "sam_mask": {
-        "views": {
-        },
+    "retinaface": {
+        "scale": {},
+        "offset": {},
+    },
+    "scrfd": {
+        "scale": {},
+        "offset": {},
+    },
+    "blazeface": {
+        "scale": {},
+        "offset": {},
+    },
+    "yolov8-face": {
+        "scale": {},
+        "offset": {},
+    },
+    "centerface": {
+        "scale": {},
+        "offset": {},
     },
 }

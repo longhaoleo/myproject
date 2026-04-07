@@ -6,6 +6,10 @@
 2. 输出：每张脸一张合并后的二值 mask（用于叠加可视化）；
 3. 同时保留每个部位（face / left_eye / right_eye / nose / mouth）的单独 mask，
    便于后续接更精细的业务逻辑。
+
+说明：
+- 本模块只负责“把检测框/关键点转成 SAM 提示框并分割”；
+- 分割结果的标准化与落盘在 sam_mask.py 里处理。
 """
 
 from __future__ import annotations
@@ -17,7 +21,7 @@ from typing import Any, Protocol
 import cv2
 import numpy as np
 
-from .settings import get_view_offset_map, get_view_scale_map, resolve_part_offset
+from .settings import adjust_box_for_view, get_view_offset_map, get_view_scale_map, resolve_part_offset
 from .types import FaceDetection
 
 
@@ -30,25 +34,13 @@ PartMaskMap = dict[str, BinaryMask]
 
 PART_NAMES = ("face", "left_eye", "right_eye", "nose", "mouth")
 
-LANDMARK_ALIASES = {
-    "left_eye": "left_eye",
-    "lefteye": "left_eye",
-    "right_eye": "right_eye",
-    "righteye": "right_eye",
-    "nose": "nose",
-    "nose_tip": "nose",
-    "nosetip": "nose",
-    "mouth": "mouth",
-    "mouth_center": "mouth",
-    "mouthcenter": "mouth",
-    "mouth_left": "mouth_left",
-    "mouthleft": "mouth_left",
-    "left_mouth": "mouth_left",
-    "leftmouth": "mouth_left",
-    "mouth_right": "mouth_right",
-    "mouthright": "mouth_right",
-    "right_mouth": "mouth_right",
-    "rightmouth": "mouth_right",
+CANONICAL_LANDMARKS = {
+    "left_eye",
+    "right_eye",
+    "nose",
+    "mouth",
+    "mouth_left",
+    "mouth_right",
 }
 
 
@@ -72,17 +64,46 @@ class FaceSegmenter(Protocol):
         ...
 
 
+def build_part_boxes_for_detections(
+    detections: list[FaceDetection],
+    image_w: int,
+    image_h: int,
+    part_names: tuple[str, ...] = PART_NAMES,
+    part_scale_by_view: dict[str, dict[str, tuple[float, float]]] | None = None,
+    part_offset_by_view: dict[str, dict[str, tuple[float, float]]] | None = None,
+    part_offset_mode: str = "ratio",
+) -> list[dict[str, tuple[int, int, int, int]]]:
+    """
+    根据检测结果生成每张脸的部位提示框（不执行 SAM）。
+
+    返回：
+    - list[dict]，每个元素对应一张脸的 {part_name: box}
+    """
+    boxes_list: list[dict[str, tuple[int, int, int, int]]] = []
+    for det in detections:
+        boxes_list.append(
+            _part_prompt_boxes(
+                det,
+                image_w=image_w,
+                image_h=image_h,
+                part_names=part_names,
+                view_id=getattr(det, "view_id", None),
+                part_scale_by_view=part_scale_by_view,
+                part_offset_by_view=part_offset_by_view,
+                part_offset_mode=part_offset_mode,
+            )
+        )
+    return boxes_list
+
+
 def _normalize_landmarks(landmarks: dict[str, tuple[int, int]]) -> dict[str, tuple[int, int]]:
     """把不同后端关键点名归一化到统一语义。"""
     # 把不同后端关键点名归一化到统一语义。
     normalized: dict[str, tuple[int, int]] = {}
     for raw_name, point in landmarks.items():
         key = str(raw_name).strip().lower().replace("-", "_").replace(" ", "_")
-        alias = LANDMARK_ALIASES.get(key)
-        if alias is None:
-            alias = LANDMARK_ALIASES.get(key.replace("_", ""))
-        if alias is not None:
-            normalized[alias] = point
+        if key in CANONICAL_LANDMARKS:
+            normalized[key] = point
     return normalized
 
 
@@ -132,7 +153,7 @@ def _part_prompt_boxes(
     基于检测结果生成 SAM 的部位提示框。
 
     规则：
-    - `face` 用检测框本身；
+    - `face` 用检测框（视角缩放 + 方形化）；
     - `left_eye/right_eye/nose/mouth` 优先用关键点 + 人脸比例估计；
     - 若缺少关键点，则只返回能构造出来的部位框。
     """
@@ -149,21 +170,15 @@ def _part_prompt_boxes(
     if "face" in part_names:
         scale_map = get_view_scale_map(view_id, part_scale_by_view)
         offset_map = get_view_offset_map(view_id, part_offset_by_view)
-        sx, sy = scale_map.get("face", (1.0, 1.0))
-        ox, oy = resolve_part_offset("face", offset_map, face_w, face_h, part_offset_mode)
-        if abs(sx - 1.0) < 1e-6 and abs(sy - 1.0) < 1e-6:
-            fx1, fy1, fx2, fy2 = face_box
-            shifted = _clip_box(fx1 + ox, fy1 + oy, fx2 + ox, fy2 + oy, image_w, image_h)
-            if shifted is not None:
-                boxes["face"] = shifted
-        else:
-            cx = int(round((face_x1 + face_x2) / 2 + ox))
-            cy = int(round((face_y1 + face_y2) / 2 + oy))
-            bw = max(1, int(round(face_w * float(sx))))
-            bh = max(1, int(round(face_h * float(sy))))
-            scaled = _box_from_center(cx, cy, bw, bh, image_w, image_h)
-            if scaled is not None:
-                boxes["face"] = scaled
+        boxes["face"] = adjust_box_for_view(
+            box=face_box,
+            part_name="face",
+            image_w=image_w,
+            image_h=image_h,
+            scale_map=scale_map,
+            offset_map=offset_map,
+            part_offset_mode=part_offset_mode,
+        )
 
     if not det.landmarks:
         return boxes
@@ -174,13 +189,11 @@ def _part_prompt_boxes(
     eye_w = max(12, int(face_w * 0.22))
     eye_h = max(10, int(face_h * 0.14))
     scale_map = get_view_scale_map(view_id, part_scale_by_view)
-    offset_map = get_view_offset_map(view_id, part_offset_by_view)
     eye_sx, eye_sy = scale_map.get("left_eye", (1.0, 1.0))
-    eye_ox, eye_oy = resolve_part_offset("left_eye", offset_map, face_w, face_h, part_offset_mode)
     if "left_eye" in part_names and "left_eye" in lm:
         box = _box_from_center(
-            lm["left_eye"][0] + int(round(eye_ox)),
-            lm["left_eye"][1] + int(round(eye_oy)),
+            lm["left_eye"][0],
+            lm["left_eye"][1],
             max(1, int(round(eye_w * float(eye_sx)))),
             max(1, int(round(eye_h * float(eye_sy)))),
             image_w,
@@ -189,11 +202,10 @@ def _part_prompt_boxes(
         if box is not None:
             boxes["left_eye"] = box
     eye_sx, eye_sy = scale_map.get("right_eye", (1.0, 1.0))
-    eye_ox, eye_oy = resolve_part_offset("right_eye", offset_map, face_w, face_h, part_offset_mode)
     if "right_eye" in part_names and "right_eye" in lm:
         box = _box_from_center(
-            lm["right_eye"][0] + int(round(eye_ox)),
-            lm["right_eye"][1] + int(round(eye_oy)),
+            lm["right_eye"][0],
+            lm["right_eye"][1],
             max(1, int(round(eye_w * float(eye_sx)))),
             max(1, int(round(eye_h * float(eye_sy)))),
             image_w,
@@ -208,10 +220,9 @@ def _part_prompt_boxes(
         nose_w = max(16, int(face_w * 0.26))
         nose_h = max(12, int(face_h * 0.22))
         nose_sx, nose_sy = scale_map.get("nose", (1.0, 1.0))
-        nose_ox, nose_oy = resolve_part_offset("nose", offset_map, face_w, face_h, part_offset_mode)
         box = _box_from_center(
-            lm["nose"][0] + int(round(nose_ox)),
-            lm["nose"][1] + int(round(nose_oy)),
+            lm["nose"][0],
+            lm["nose"][1],
             max(1, int(round(nose_w * float(nose_sx)))),
             max(1, int(round(nose_h * float(nose_sy)))),
             image_w,
@@ -223,7 +234,6 @@ def _part_prompt_boxes(
     # 嘴巴框：优先由左右嘴角合成，侧脸情况下更稳。
     if "mouth" in part_names:
         mouth_sx, mouth_sy = scale_map.get("mouth", (1.0, 1.0))
-        mouth_ox, mouth_oy = resolve_part_offset("mouth", offset_map, face_w, face_h, part_offset_mode)
         if "mouth_left" in lm and "mouth_right" in lm:
             mlx, mly = lm["mouth_left"]
             mrx, mry = lm["mouth_right"]
@@ -232,10 +242,10 @@ def _part_prompt_boxes(
             pad_x = int(round(pad_x * float(mouth_sx)))
             half_h = int(round(half_h * float(mouth_sy)))
             box = _clip_box(
-                min(mlx, mrx) - pad_x + mouth_ox,
-                int((mly + mry) / 2) - half_h + mouth_oy,
-                max(mlx, mrx) + pad_x + mouth_ox,
-                int((mly + mry) / 2) + half_h + mouth_oy,
+                min(mlx, mrx) - pad_x,
+                int((mly + mry) / 2) - half_h,
+                max(mlx, mrx) + pad_x,
+                int((mly + mry) / 2) + half_h,
                 image_w,
                 image_h,
             )
@@ -245,8 +255,8 @@ def _part_prompt_boxes(
             mouth_w = max(14, int(face_w * 0.30))
             mouth_h = max(10, int(face_h * 0.16))
             box = _box_from_center(
-                lm["mouth"][0] + int(round(mouth_ox)),
-                lm["mouth"][1] + int(round(mouth_oy)),
+                lm["mouth"][0],
+                lm["mouth"][1],
                 max(1, int(round(mouth_w * float(mouth_sx)))),
                 max(1, int(round(mouth_h * float(mouth_sy)))),
                 image_w,

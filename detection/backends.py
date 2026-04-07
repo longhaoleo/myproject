@@ -8,6 +8,10 @@
 - BlazeFace（MediaPipe FaceDetection）
 - YOLOv8-Face（改造版，支持关键点）
 - CenterFace
+
+约定：
+- 所有 detect() 接收 OpenCV BGR 图像；
+- 返回 FaceDetection 列表（box/score/landmarks 坐标均为像素）。
 """
 
 from dataclasses import dataclass
@@ -104,6 +108,7 @@ class MTCNNDetector(BaseDetector):
 
     def detect(self, image: np.ndarray) -> list[FaceDetection]:
         """返回检测到的人脸框与 5 点关键点。"""
+        # MTCNN 自带 5 点关键点：left_eye/right_eye/nose/mouth_left/mouth_right
         h, w = image.shape[:2]
         rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         boxes, probs, landmarks = self._model.detect(rgb, landmarks=True)
@@ -168,6 +173,7 @@ class RetinaFaceDetector(BaseDetector):
 
     def detect(self, image: np.ndarray) -> list[FaceDetection]:
         """返回检测到的人脸框与关键点。"""
+        # RetinaFace 的 keypoint 命名依赖其内部实现，统一在 visualize 里做别名归一化。
         h, w = image.shape[:2]
         raw = self._retina.detect_faces(image)
         if raw is None:

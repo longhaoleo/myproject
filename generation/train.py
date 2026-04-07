@@ -34,6 +34,7 @@ from .settings import (
 
 
 def _resolve_rel_path(paths: GenerationPaths, sample_path: str | Path) -> Path:
+    """把绝对路径归一化为相对样本路径（用于跨目录复用 mask 路径规则）。"""
     path = Path(sample_path)
     for root in (paths.sanitized_root, paths.input_root, paths.depth_root, paths.inpaint_mask_root):
         try:
@@ -43,6 +44,7 @@ def _resolve_rel_path(paths: GenerationPaths, sample_path: str | Path) -> Path:
     raise ValueError(f"无法解析相对路径: {path}")
 
 def _load_mask_bbox(path: Path) -> tuple[int, int, int, int] | None:
+    """从二值 mask 反推最小外接框，返回 (x1,y1,x2,y2)。"""
     if not path.exists():
         return None
     mask = cv2.imread(str(path), cv2.IMREAD_GRAYSCALE)
@@ -60,6 +62,7 @@ def _expand_box(
     height: int,
     context_ratio: float,
 ) -> tuple[int, int, int, int] | None:
+    """按比例给框加上下文边界，避免裁剪过紧导致语义缺失。"""
     if box is None:
         return None
     x1, y1, x2, y2 = box
@@ -76,6 +79,7 @@ def _expand_box(
 
 
 def _image_to_tensor(image: Image.Image, resolution: int):
+    """RGB 图转 [-1,1] 张量，统一 pad 到正方形训练分辨率。"""
     import torch
 
     square = ImageOps.pad(image.convert("RGB"), (resolution, resolution), method=Image.Resampling.BICUBIC)
@@ -84,6 +88,7 @@ def _image_to_tensor(image: Image.Image, resolution: int):
 
 
 def _mask_to_tensor(mask: Image.Image, resolution: int):
+    """Mask 转 [0,1] 单通道张量，并硬阈值为二值。"""
     import torch
 
     square = ImageOps.pad(mask.convert("L"), (resolution, resolution), method=Image.Resampling.NEAREST)
@@ -113,14 +118,17 @@ class _SdxlLoRADataset:
         return len(self.samples)
 
     def __getitem__(self, index: int) -> dict[str, Any]:
+        """返回一条训练样本（图像、mask、masked 图、prompt、样本权重）。"""
         sample = self.samples[index]
         image = Image.open(sample.image_path).convert("RGB")
         mask = Image.open(sample.inpaint_mask_path).convert("L")
         if sample.crop_box is not None:
+            # 局部样本模式：只在鼻嘴联合区域训练细节先验。
             image = image.crop(sample.crop_box)
             mask = mask.crop(sample.crop_box)
         tensor = _image_to_tensor(image, self.resolution)
         mask_tensor = _mask_to_tensor(mask, self.resolution)
+        # SDXL inpaint 训练输入之一：被遮掉编辑区域后的上下文图。
         masked_tensor = tensor * (mask_tensor < 0.5)
         return {
             "pixel_values": tensor,
@@ -133,6 +141,7 @@ class _SdxlLoRADataset:
 
 
 def _collate_fn(examples: list[dict[str, Any]]) -> dict[str, Any]:
+    """DataLoader 拼批函数，保留 prompt 与样本类型等元信息。"""
     import torch
 
     return {
@@ -159,6 +168,7 @@ def _build_training_samples(
     """
     samples: list[_TrainSample] = []
     for row in manifest_rows:
+        # 当前训练只用术后训练集；术前样本用于推理，不进入 LoRA 训练。
         if row.get("stage") != "术后":
             continue
         if row.get("split") != "train":
@@ -195,6 +205,7 @@ def _build_training_samples(
         if nose_box is None and mouth_box is None:
             continue
 
+        # edit_crop：把鼻子 + 嘴巴合成一个局部训练区域，强化目标编辑区表达。
         image = Image.open(image_path).convert("RGB")
         width, height = image.size
         boxes = [box for box in (nose_box, mouth_box) if box is not None]
@@ -225,6 +236,7 @@ def _build_training_samples(
 
 
 def _torch_dtype(name: str, device: torch.device) -> torch.dtype:
+    """按配置字符串解析训练 dtype（CPU 上统一回退 fp32）。"""
     import torch
 
     key = str(name).strip().lower()
@@ -238,6 +250,7 @@ def _torch_dtype(name: str, device: torch.device) -> torch.dtype:
 
 
 def _autocast_context(device: torch.device, dtype: torch.dtype):
+    """根据设备与 dtype 生成 autocast 上下文。"""
     import torch
 
     enabled = device.type == "cuda" and dtype in {torch.float16, torch.bfloat16}
@@ -250,6 +263,7 @@ def _encode_prompts(
     text_encoders,
     device: torch.device,
 ) -> tuple[torch.Tensor, torch.Tensor]:
+    """编码 SDXL 双文本编码器输入，返回拼接后的 prompt embeds。"""
     prompt_embeds_list = []
     pooled_prompt_embeds = None
 
@@ -274,6 +288,7 @@ def _encode_prompts(
 
 
 def _time_ids(batch_size: int, resolution: int, device: torch.device) -> torch.Tensor:
+    """构造 SDXL 额外条件 time_ids（原始尺寸与目标尺寸信息）。"""
     values = torch.tensor(
         [[resolution, resolution, 0, 0, resolution, resolution]],
         dtype=torch.float32,
@@ -283,6 +298,7 @@ def _time_ids(batch_size: int, resolution: int, device: torch.device) -> torch.T
 
 
 def _save_lora_weights(save_dir: Path, unet) -> None:
+    """仅保存 UNet LoRA 权重，避免落盘整模型。"""
     from diffusers import StableDiffusionXLInpaintPipeline
     from peft.utils import get_peft_model_state_dict
 
@@ -318,9 +334,11 @@ def train_lora(
     np.random.seed(config.seed)
     torch.manual_seed(config.seed)
 
+    # 训练硬件与精度配置：GPU 时可走 fp16/bf16；CPU 固定 fp32。
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     weight_dtype = _torch_dtype(config.mixed_precision, device)
 
+    # 加载 SDXL inpainting 训练所需组件。
     tokenizer = AutoTokenizer.from_pretrained(
         config.base_model_id,
         subfolder="tokenizer",
@@ -344,6 +362,7 @@ def train_lora(
             f"当前底模不是 SDXL inpainting UNet，期望 in_channels=9，实际为 {getattr(unet.config, 'in_channels', 'unknown')}"
         )
 
+    # LoRA 仅挂载在 cross-attention 常见线性层上，减少训练参数量。
     lora_cfg = LoraConfig(
         r=config.rank,
         lora_alpha=config.alpha,
@@ -382,6 +401,7 @@ def train_lora(
 
     effective_steps_per_epoch = max(1, math.ceil(len(dataloader) / max(1, config.gradient_accumulation_steps)))
     if config.max_train_steps > 0:
+        # 手动设定 step 上限时，按每轮有效 step 推导最小 epoch 数。
         max_train_steps = config.max_train_steps
         num_epochs = max(1, math.ceil(max_train_steps / effective_steps_per_epoch))
     else:
@@ -393,6 +413,11 @@ def train_lora(
     optimizer.zero_grad(set_to_none=True)
     accumulation_counter = 0
 
+    # 主训练循环：
+    # 1) 编码图像到 latent
+    # 2) 按扩散时间步加噪
+    # 3) UNet 预测噪声
+    # 4) 对噪声目标做加权 MSE
     for epoch in range(num_epochs):
         for step, batch in enumerate(dataloader):
             pixel_values = batch["pixel_values"].to(device=device, dtype=weight_dtype)
@@ -406,6 +431,7 @@ def train_lora(
                     masked_image_latents = vae.encode(masked_pixel_values).latent_dist.sample()
                 latents = latents * vae.config.scaling_factor
                 masked_image_latents = masked_image_latents * vae.config.scaling_factor
+                # inpaint UNet 输入的 mask 分辨率需与 latent 空间对齐。
                 mask = F.interpolate(mask_values, size=latents.shape[-2:], mode="nearest")
 
             noise = torch.randn_like(latents)
@@ -428,6 +454,8 @@ def train_lora(
                 add_time_ids = _time_ids(latents.shape[0], config.resolution, device)
 
             with _autocast_context(device, weight_dtype):
+                # SDXL inpaint UNet 典型 9 通道输入：
+                # noisy_latents(4) + mask(1) + masked_image_latents(4)
                 latent_model_input = torch.cat([noisy_latents, mask, masked_image_latents], dim=1)
                 model_pred = unet(
                     latent_model_input,
@@ -443,6 +471,7 @@ def train_lora(
             if noise_scheduler.config.prediction_type == "v_prediction":
                 target = noise_scheduler.get_velocity(latents, noise, timesteps)
 
+            # 按样本权重聚合损失（head_reference 与 edit_crop 的权重可独立控制）。
             loss = ((model_pred.float() - target.float()) ** 2).mean(dim=(1, 2, 3))
             loss = (loss * weights).mean() / max(1, config.gradient_accumulation_steps)
             loss.backward()
@@ -478,6 +507,7 @@ def train_lora(
     final_dir = paths.lora_root / "final"
     _save_lora_weights(final_dir, unet)
 
+    # 落盘训练样本清单，便于后续复现实验。
     train_index_path = paths.lora_root / "train_samples.jsonl"
     train_index_path.parent.mkdir(parents=True, exist_ok=True)
     with train_index_path.open("w", encoding="utf-8") as f:

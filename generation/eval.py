@@ -23,6 +23,7 @@ from .settings import GenerationPaths, default_generation_paths, dump_config_sna
 
 
 def _resolve_rel_path(paths: GenerationPaths, sample_path: str | Path) -> Path:
+    """把样本绝对路径映射为相对路径，保持评估输出目录树一致。"""
     path = Path(sample_path)
     for root in (paths.sanitized_root, paths.input_root, paths.inference_root):
         try:
@@ -33,10 +34,12 @@ def _resolve_rel_path(paths: GenerationPaths, sample_path: str | Path) -> Path:
 
 
 def _png_path(root: Path, rel_path: Path) -> Path:
+    """把样本相对路径映射到 PNG 文件。"""
     return (root / rel_path).with_suffix(".png")
 
 
 def _concat_triptych(left: np.ndarray, middle: np.ndarray, right: np.ndarray) -> np.ndarray:
+    """拼接三联图：术前 | 术后GT | 预测结果。"""
     height, width = left.shape[:2]
     tiles = [left, middle, right]
     resized = [cv2.resize(tile, (width, height), interpolation=cv2.INTER_AREA) for tile in tiles]
@@ -51,6 +54,9 @@ def run_evaluation(
     paths = paths or default_generation_paths()
     manifest_rows = build_generation_manifest(paths)
 
+    # 统计项分两类：
+    # 1) 条件齐备度（pair、mask、depth）
+    # 2) 推理落盘覆盖率（术前样本是否有 composited 结果）
     total_rows = len(manifest_rows)
     paired_ok = 0
     nose_mask_ok = 0
@@ -63,6 +69,7 @@ def run_evaluation(
     pre_rows = [row for row in manifest_rows if row.get("stage") == "术前"]
     outputs_by_case: dict[str, set[str]] = {}
 
+    # 第一遍：扫描全量 manifest，统计前置条件完整度。
     for row in manifest_rows:
         paired_pre = Path(str(row.get("paired_pre_path") or "")) if row.get("paired_pre_path") else None
         paired_post = Path(str(row.get("paired_post_path") or "")) if row.get("paired_post_path") else None
@@ -75,6 +82,7 @@ def run_evaluation(
         if row.get("depth_path") and Path(str(row.get("depth_path"))).exists():
             depth_ok += 1
 
+    # 第二遍：只看术前样本，检查是否已有推理结果，并按需导出三联图。
     for row in pre_rows:
         image_path = Path(str(row.get("image_path") or ""))
         if not image_path.exists():
@@ -90,6 +98,7 @@ def run_evaluation(
         view_id = str(row.get("view_id") or "")
         outputs_by_case.setdefault(case_id, set()).add(view_id)
 
+        # 三联图用于人工验收，数量过大时按 max_triptychs 截断。
         if triptych_count >= max_triptychs:
             continue
 
@@ -109,6 +118,7 @@ def run_evaluation(
         cv2.imwrite(str(out_path), triptych)
         triptych_count += 1
 
+    # 统计“六视角齐全”的 case，便于后续挑选完整样本做定量分析。
     for case_id, views in outputs_by_case.items():
         if all(str(v) in views for v in range(1, 7)):
             complete_six_view_cases.add(case_id)

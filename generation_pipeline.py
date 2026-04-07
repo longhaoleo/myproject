@@ -19,6 +19,7 @@ RUN_MODE = "infer"
 
 
 def main() -> None:
+    # 允许通过环境变量覆盖，便于 notebook/CI 不改代码直接切模式。
     mode = os.getenv("GEN_RUN_MODE", RUN_MODE).strip().lower()
 
     if mode == "train_lora":

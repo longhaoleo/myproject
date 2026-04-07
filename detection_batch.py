@@ -9,6 +9,7 @@ RUN_MODE = "detect_compare"
 
 
 def main() -> None:
+    # 入口只做模式分发；具体配置在各子模块内部维护。
     mode = RUN_MODE.strip().lower()
     if mode == "detect_compare":
         from detection.batch import main as run_detect_compare

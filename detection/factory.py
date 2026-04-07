@@ -1,5 +1,10 @@
 """
 检测器工厂：通过字符串名称创建对应后端。
+
+设计目标：
+- 统一入口创建不同检测器；
+- 处理别名归一（yolov8face / face-landmarker 等）；
+- 把后端初始化细节隔离在 backends.py。
 """
 
 from pathlib import Path
@@ -33,7 +38,6 @@ def supported_detector_names() -> list[str]:
         "mediapipe-landmarker",
         "face-landmarker",
         "yolov8-face",
-        "yolov8face",
         "centerface",
     ]
 
@@ -44,7 +48,13 @@ def create_face_detector(
     min_confidence: float = 0.5,
     detector_options: dict[str, Any] | None = None,
 ):
-    """创建检测器实例（统一入口）。"""
+    """
+    创建检测器实例（统一入口）。
+
+    detector_options 说明：
+    - scrfd: det_size
+    - yolov8-face: model_path / keypoint_confidence
+    """
     # 统一归一化名称后再做分发。
     key = _normalize_name(detector_name)
     options = detector_options or {}

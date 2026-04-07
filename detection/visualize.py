@@ -1,11 +1,17 @@
 """
 人脸检测结果可视化模块。
+
+功能：
+- 绘制人脸框 + 置信度；
+- 绘制关键点（按统一语义名）；
+- 绘制部位框（眼/鼻/嘴）；
+- 可选叠加分割 mask。
 """
 
 import cv2
 import numpy as np
 
-from .settings import get_view_offset_map, get_view_scale_map, resolve_part_offset
+from .settings import adjust_box_for_view, get_view_offset_map, get_view_scale_map, resolve_part_offset
 from .types import FaceDetection
 
 
@@ -34,25 +40,13 @@ SEG_MASK_COLORS = {
     "mouth": (255, 0, 180),
 }
 
-LANDMARK_ALIASES = {
-    "left_eye": "left_eye",
-    "lefteye": "left_eye",
-    "right_eye": "right_eye",
-    "righteye": "right_eye",
-    "nose": "nose",
-    "nose_tip": "nose",
-    "nosetip": "nose",
-    "mouth": "mouth",
-    "mouth_center": "mouth",
-    "mouthcenter": "mouth",
-    "mouth_left": "mouth_left",
-    "mouthleft": "mouth_left",
-    "left_mouth": "mouth_left",
-    "leftmouth": "mouth_left",
-    "mouth_right": "mouth_right",
-    "mouthright": "mouth_right",
-    "right_mouth": "mouth_right",
-    "rightmouth": "mouth_right",
+CANONICAL_LANDMARKS = {
+    "left_eye",
+    "right_eye",
+    "nose",
+    "mouth",
+    "mouth_left",
+    "mouth_right",
 }
 
 
@@ -62,11 +56,8 @@ def _normalize_landmarks(landmarks: dict[str, tuple[int, int]]) -> dict[str, tup
     normalized: dict[str, tuple[int, int]] = {}
     for raw_name, point in landmarks.items():
         key = str(raw_name).strip().lower().replace("-", "_").replace(" ", "_")
-        alias = LANDMARK_ALIASES.get(key)
-        if alias is None:
-            alias = LANDMARK_ALIASES.get(key.replace("_", ""))
-        if alias is not None:
-            normalized[alias] = point
+        if key in CANONICAL_LANDMARKS:
+            normalized[key] = point
     return normalized
 
 
@@ -146,14 +137,12 @@ def _draw_semantic_part_boxes(
     eye_w = max(12, int(face_w * 0.22))
     eye_h = max(10, int(face_h * 0.14))
     scale_map = get_view_scale_map(view_id, part_scale_by_view)
-    offset_map = get_view_offset_map(view_id, part_offset_by_view)
     eye_sx, eye_sy = scale_map.get("left_eye", (1.0, 1.0))
-    eye_ox, eye_oy = resolve_part_offset("left_eye", offset_map, face_w, face_h, part_offset_mode)
     if "left_eye" in lm:
         ex, ey = lm["left_eye"]
         eye_box = _box_from_center(
-            ex + int(round(eye_ox)),
-            ey + int(round(eye_oy)),
+            ex,
+            ey,
             max(1, int(round(eye_w * float(eye_sx)))),
             max(1, int(round(eye_h * float(eye_sy)))),
             w,
@@ -162,12 +151,11 @@ def _draw_semantic_part_boxes(
         if eye_box is not None:
             _draw_part_box(canvas, eye_box, "left_eye")
     eye_sx, eye_sy = scale_map.get("right_eye", (1.0, 1.0))
-    eye_ox, eye_oy = resolve_part_offset("right_eye", offset_map, face_w, face_h, part_offset_mode)
     if "right_eye" in lm:
         ex, ey = lm["right_eye"]
         eye_box = _box_from_center(
-            ex + int(round(eye_ox)),
-            ey + int(round(eye_oy)),
+            ex,
+            ey,
             max(1, int(round(eye_w * float(eye_sx)))),
             max(1, int(round(eye_h * float(eye_sy)))),
             w,
@@ -183,10 +171,9 @@ def _draw_semantic_part_boxes(
         nose_w = max(16, int(face_w * 0.26))
         nose_h = max(12, int(face_h * 0.22))
         nose_sx, nose_sy = scale_map.get("nose", (1.0, 1.0))
-        nose_ox, nose_oy = resolve_part_offset("nose", offset_map, face_w, face_h, part_offset_mode)
         nose_box = _box_from_center(
-            nx + int(round(nose_ox)),
-            ny + int(round(nose_oy)),
+            nx,
+            ny,
             max(1, int(round(nose_w * float(nose_sx)))),
             max(1, int(round(nose_h * float(nose_sy)))),
             w,
@@ -197,7 +184,6 @@ def _draw_semantic_part_boxes(
 
     # 嘴巴框：优先用左右嘴角合成更稳定的框；没有嘴角时退化到 mouth 中心点。
     mouth_sx, mouth_sy = scale_map.get("mouth", (1.0, 1.0))
-    mouth_ox, mouth_oy = resolve_part_offset("mouth", offset_map, face_w, face_h, part_offset_mode)
     if "mouth_left" in lm and "mouth_right" in lm:
         mlx, mly = lm["mouth_left"]
         mrx, mry = lm["mouth_right"]
@@ -206,10 +192,10 @@ def _draw_semantic_part_boxes(
         pad_x = int(round(pad_x * float(mouth_sx)))
         half_h = int(round(half_h * float(mouth_sy)))
         mouth_box = _clip_rect(
-            min(mlx, mrx) - pad_x + mouth_ox,
-            int((mly + mry) / 2) - half_h + mouth_oy,
-            max(mlx, mrx) + pad_x + mouth_ox,
-            int((mly + mry) / 2) + half_h + mouth_oy,
+            min(mlx, mrx) - pad_x,
+            int((mly + mry) / 2) - half_h,
+            max(mlx, mrx) + pad_x,
+            int((mly + mry) / 2) + half_h,
             w,
             h,
         )
@@ -220,8 +206,8 @@ def _draw_semantic_part_boxes(
         mouth_w = max(14, int(face_w * 0.30))
         mouth_h = max(10, int(face_h * 0.16))
         mouth_box = _box_from_center(
-            mx + int(round(mouth_ox)),
-            my + int(round(mouth_oy)),
+            mx,
+            my,
             max(1, int(round(mouth_w * float(mouth_sx)))),
             max(1, int(round(mouth_h * float(mouth_sy)))),
             w,
@@ -274,54 +260,39 @@ def _draw_segmentation_masks(canvas, segmentation_masks, alpha: float = 0.22):
 def draw_face_detections(
     image,
     detections: list[FaceDetection],
-    detector_name: str,
-    status_text: str = "",
-    draw_landmarks: bool = True,
-    draw_part_boxes: bool = True,
     segmentation_masks=None,
     view_id: str | None = None,
     part_scale_by_view: dict[str, dict[str, tuple[float, float]]] | None = None,
     part_offset_by_view: dict[str, dict[str, tuple[float, float]]] | None = None,
     part_offset_mode: str = "ratio",
 ):
-    """综合绘制检测框、关键点、部位框与分割叠加。"""
+    """
+    综合绘制检测框、关键点、部位框与分割叠加。
+
+    注意：
+    - 人脸框经过 settings.adjust_box_for_view 处理（方形化 + 放大）。
+    - 关键点偏移已在上游写回检测结果，这里只负责绘制。
+    """
     # 画框和关键点，返回可视化图像。
     canvas = image.copy()
-
-    title = f"detector: {detector_name}"
-    if status_text:
-        title = f"{title} | {status_text}"
-
-    cv2.putText(
-        canvas,
-        title,
-        (10, 28),
-        cv2.FONT_HERSHEY_SIMPLEX,
-        0.7,
-        (0, 255, 255),
-        2,
-        cv2.LINE_AA,
-    )
-
-    if not detections:
-        cv2.putText(
-            canvas,
-            "no face detected",
-            (10, 58),
-            cv2.FONT_HERSHEY_SIMPLEX,
-            0.7,
-            (0, 0, 255),
-            2,
-            cv2.LINE_AA,
-        )
-        return canvas
 
     # 先叠加分割区域，再画框和关键点，视觉上更清晰。
     if segmentation_masks:
         _draw_segmentation_masks(canvas, segmentation_masks)
 
     for det in detections:
-        x1, y1, x2, y2 = det.box
+        active_view = getattr(det, "view_id", None) or view_id
+        scale_map = get_view_scale_map(active_view, part_scale_by_view)
+        offset_map = get_view_offset_map(active_view, part_offset_by_view)
+        x1, y1, x2, y2 = adjust_box_for_view(
+            box=det.box,
+            part_name="face",
+            image_w=canvas.shape[1],
+            image_h=canvas.shape[0],
+            scale_map=scale_map,
+            offset_map=offset_map,
+            part_offset_mode=part_offset_mode,
+        )
         cv2.rectangle(canvas, (x1, y1), (x2, y2), (255, 255, 0), 2)
 
         score_text = "score: n/a"
@@ -339,17 +310,16 @@ def draw_face_detections(
             cv2.LINE_AA,
         )
 
-        if draw_part_boxes:
-            _draw_semantic_part_boxes(
-                canvas,
-                det,
-                view_id=getattr(det, "view_id", None) or view_id,
-                part_scale_by_view=part_scale_by_view,
-                part_offset_by_view=part_offset_by_view,
-                part_offset_mode=part_offset_mode,
-            )
+        _draw_semantic_part_boxes(
+            canvas,
+            det,
+            view_id=getattr(det, "view_id", None) or view_id,
+            part_scale_by_view=part_scale_by_view,
+            part_offset_by_view=part_offset_by_view,
+            part_offset_mode=part_offset_mode,
+        )
 
-        if draw_landmarks and det.landmarks:
+        if det.landmarks:
             # 关键点绘制按图像尺寸自适应，避免高分辨率图上点太小看不见。
             h, w = canvas.shape[:2]
             base = max(h, w)
@@ -358,21 +328,17 @@ def draw_face_detections(
             font_scale = max(0.4, base / 3600.0)
 
             normalized = _normalize_landmarks(det.landmarks)
-            # 视角偏移：让关键点与部位框保持一致（仅影响可视化）
-            active_view = getattr(det, "view_id", None) or view_id
-            offset_map = get_view_offset_map(active_view, part_offset_by_view)
             fx1, fy1, fx2, fy2 = det.box
             face_w = max(1, fx2 - fx1)
             face_h = max(1, fy2 - fy1)
 
             for name, (px, py) in normalized.items():
-                dx, dy = resolve_part_offset(name, offset_map, face_w, face_h, part_offset_mode)
                 color = POINT_COLORS.get(name, (200, 200, 200))
-                cv2.circle(canvas, (px + dx, py + dy), point_radius, color, -1)
+                cv2.circle(canvas, (px, py), point_radius, color, -1)
                 cv2.putText(
                     canvas,
                     name,
-                    (px + dx + point_radius + 1, py + dy - point_radius - 1),
+                    (px + point_radius + 1, py - point_radius - 1),
                     cv2.FONT_HERSHEY_SIMPLEX,
                     font_scale,
                     color,

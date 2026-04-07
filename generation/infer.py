@@ -28,6 +28,7 @@ from .settings import (
 
 
 def _resolve_rel_path(paths: GenerationPaths, sample_path: str | Path) -> Path:
+    """把样本路径归一化为相对路径，用于统一输出目录树。"""
     path = Path(sample_path)
     for root in (paths.sanitized_root, paths.input_root, paths.depth_root, paths.inference_root):
         try:
@@ -38,10 +39,12 @@ def _resolve_rel_path(paths: GenerationPaths, sample_path: str | Path) -> Path:
 
 
 def _mask_path(root: Path, rel_path: Path) -> Path:
+    """将相对样本路径映射到 PNG 输出路径。"""
     return (root / rel_path).with_suffix(".png")
 
 
 def _row_path(row: dict[str, Any], *keys: str) -> Path | None:
+    """按优先级从 manifest 行里取第一个有效路径字段。"""
     for key in keys:
         value = str(row.get(key) or "").strip()
         if value:
@@ -50,14 +53,17 @@ def _row_path(row: dict[str, Any], *keys: str) -> Path | None:
 
 
 def _load_rgb_image(path: str | Path) -> Image.Image:
+    """读取 RGB 图给 diffusers pipeline。"""
     return Image.open(path).convert("RGB")
 
 
 def _load_gray_image(path: str | Path) -> Image.Image:
+    """读取灰度图（inpaint mask / feather mask）。"""
     return Image.open(path).convert("L")
 
 
 def _apply_privacy_fill(image_bgr: np.ndarray, mask: np.ndarray, fill_mode: str) -> np.ndarray:
+    """在隐私区域执行黑填充或模糊，避免把眼部特征送入生成器。"""
     if not mask.any():
         return image_bgr.copy()
     output = image_bgr.copy()
@@ -71,6 +77,7 @@ def _apply_privacy_fill(image_bgr: np.ndarray, mask: np.ndarray, fill_mode: str)
 
 
 def _load_binary_mask(path: Path) -> np.ndarray | None:
+    """读取并二值化 mask（True 为掩码区域）。"""
     if not path.exists():
         return None
     mask = cv2.imread(str(path), cv2.IMREAD_GRAYSCALE)
@@ -80,6 +87,7 @@ def _load_binary_mask(path: Path) -> np.ndarray | None:
 
 
 def _blur_mask(mask: np.ndarray, blur_px: int) -> np.ndarray:
+    """对二值 mask 做高斯羽化，生成 alpha 贴合边界。"""
     kernel = max(1, int(blur_px))
     if kernel % 2 == 0:
         kernel += 1
@@ -91,6 +99,7 @@ def _composite_with_mask(
     generated_bgr: np.ndarray,
     feather_mask_u8: np.ndarray,
 ) -> np.ndarray:
+    """按羽化 alpha 把生成结果回贴到原图。"""
     alpha = feather_mask_u8.astype(np.float32) / 255.0
     if alpha.ndim == 2:
         alpha = alpha[..., None]
@@ -107,6 +116,7 @@ def _make_preview(
     raw_bgr: np.ndarray,
     composite_bgr: np.ndarray,
 ) -> np.ndarray:
+    """拼接预览条：输入图 | mask | depth | 原始生成 | 回贴结果。"""
     mask_bgr = cv2.cvtColor(mask_u8, cv2.COLOR_GRAY2BGR)
     height, width = input_bgr.shape[:2]
     tiles = [input_bgr, mask_bgr, depth_bgr, raw_bgr, composite_bgr]
@@ -115,6 +125,7 @@ def _make_preview(
 
 
 def _torch_dtype(name: str, device: torch.device) -> torch.dtype:
+    """按配置解析推理 dtype（CPU 固定 fp32）。"""
     import torch
 
     key = str(name).strip().lower()
@@ -196,6 +207,7 @@ def _build_component_quant_config(config: InferenceConfig, component_name: str):
 
 
 def _load_pipeline(config: InferenceConfig, device: torch.device):
+    """按配置加载 SDXL inpaint pipeline，可选接入 ControlNet 与量化。"""
     from diffusers import StableDiffusionXLControlNetInpaintPipeline, StableDiffusionXLInpaintPipeline
 
     dtype = _torch_dtype(config.torch_dtype, device)
@@ -206,6 +218,7 @@ def _load_pipeline(config: InferenceConfig, device: torch.device):
     pipe_cls = StableDiffusionXLInpaintPipeline
 
     if config.enable_depth_condition:
+        # 深度条件模式：加载 ControlNet，并构造 SDXL ControlNet Inpaint pipeline。
         from diffusers import ControlNetModel
 
         controlnet = ControlNetModel.from_pretrained(
@@ -255,6 +268,7 @@ def run_inference(
     manifest_rows = build_generation_manifest(paths)
     import torch
 
+    # 推理优先使用 GPU；无 GPU 自动回退 CPU。
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     pipe = _load_pipeline(config, device)
 
@@ -268,6 +282,7 @@ def run_inference(
     issues: list[dict[str, Any]] = []
 
     for idx, row in enumerate(input_rows):
+        # 1) 读取输入图与所有条件路径。
         image_path = _row_path(row, "sanitized_image_path", "image_path")
         if image_path is None:
             image_path = Path("")
@@ -297,6 +312,7 @@ def run_inference(
 
         missing_depth = config.enable_depth_condition and not depth_path.exists()
         if not inpaint_mask_path.exists() or missing_depth:
+            # 关键条件缺失（inpaint/depth）直接记失败，不进入推理。
             failed_count += 1
             issues.append(
                 {
@@ -322,10 +338,12 @@ def run_inference(
             continue
 
         if config.apply_eye_privacy_mask and not str(image_path).startswith(str(paths.sanitized_root)):
+            # 若输入还未做眼部打码，这里可以临时加隐私遮挡兜底。
             privacy_mask = _load_binary_mask(privacy_mask_path)
             if privacy_mask is not None:
                 base_bgr = _apply_privacy_fill(base_bgr, privacy_mask, config.privacy_fill)
 
+        # 2) 构造 prompt 与随机种子，执行一次生成。
         prompt = str(config.prompt_template).format(
             doctor_token=row.get("doctor_token", "dr_style"),
             view_token=row.get("view_token", ""),
@@ -358,6 +376,7 @@ def run_inference(
         generated_rgb = result.images[0]
         raw_bgr = cv2.cvtColor(np.asarray(generated_rgb), cv2.COLOR_RGB2BGR)
 
+        # 3) 回贴阶段优先读取 feather mask；若缺失则临时由二值 inpaint mask 模糊得到。
         feather = cv2.imread(str(feather_mask_path), cv2.IMREAD_GRAYSCALE)
         if feather is None:
             binary_mask = cv2.imread(str(inpaint_mask_path), cv2.IMREAD_GRAYSCALE)
@@ -391,6 +410,7 @@ def run_inference(
         cv2.imwrite(str(preview_path), preview)
         success_count += 1
 
+    # 汇总只落盘最终统计与问题清单，不额外写中间日志文件。
     summary = {
         "requested_samples": len(input_rows),
         "success_count": success_count,

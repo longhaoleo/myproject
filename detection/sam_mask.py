@@ -8,6 +8,10 @@ SAM 分割批处理入口（与 detect_compare / eye_mask 并列）。
    - 预览图（可叠加分割）；
    - 合并 mask（二值图）；
    - 分部位 mask（二值图，按 part 子目录保存）。
+
+说明：
+- 检测结果可选缓存（JSON），便于“先检测后分割”的离线流程；
+- 可直接落盘 generation 所需的标准化 mask（face / inpaint / feather）。
 """
 
 from __future__ import annotations
@@ -24,20 +28,20 @@ from .artifacts import (
     ArtifactConfig,
     blur_mask_u8,
     build_continuous_edit_mask,
+    box_mask,
     mask_to_u8,
     standardize_part_masks,
 )
 from .factory import create_face_detector, supported_detector_names
-from .segmentation import PART_NAMES, create_face_segmenter
+from .segmentation import PART_NAMES, build_part_boxes_for_detections, create_face_segmenter
 from .settings import (
+    apply_landmark_offsets,
     default_detector_options,
     default_min_confidence_map,
     default_part_offset_mode,
     default_part_offset_by_view,
     default_part_scale_by_view,
     default_paths,
-    get_view_offset_map,
-    resolve_part_offset,
 )
 from .types import FaceDetection
 from .visualize import draw_face_detections
@@ -88,6 +92,7 @@ def _save_detections_cache(
     detections: list[FaceDetection],
 ) -> None:
     """把检测结果写入缓存 JSON。"""
+    # 缓存结构简单固定：detector 名 + 每张脸的 box/score/landmarks。
     cache_file = _cache_path(cache_root, rel_path)
     cache_file.parent.mkdir(parents=True, exist_ok=True)
 
@@ -174,7 +179,14 @@ def _merge_part_masks(
 
 
 def main():
-    """SAM 分割批处理入口。"""
+    """
+    SAM 分割批处理入口。
+
+    关键开关：
+    - detector_name: SAM 提示框来源检测器
+    - prompt_source: detector 或 cache
+    - export_generation_artifacts: 是否输出 inpaint/feather/face 标准化产物
+    """
     # 数据与输出目录（集中管理）
     paths = default_paths()
     input_root = paths.input_root
@@ -195,21 +207,23 @@ def main():
     # - "detector"（默认）：每次直接跑检测器，再喂给 SAM
     # - "cache"：优先读取历史检测缓存（适合“前一步检测已完成，再跑 SAM”）
     prompt_source = "detector"
+    # mode3：重绘 mask 来源（可选两条路径）
+    # - "sam": 用 SAM 分割结果生成重绘 mask
+    # - "detector-box": 用检测框的 nose+mouth 组合生成重绘 mask
+    mask_source = "sam"
     # 缓存缺失时是否回退到检测器（仅 prompt_source="cache" 时生效）
     cache_miss_fallback_to_detector = True
     # 是否把本次检测结果写入缓存（建议开启）
     save_detection_cache = True
-    default_min_confidence = 0.5
     min_confidence_map = default_min_confidence_map()
     detector_options_map: dict[str, dict[str, Any]] = default_detector_options(model_dir)
 
     # SAM 配置（轻量版）
-    segmenter_name = "mobile-sam"
-    tweak_method_name = "sam_mask"
-    # 视角缩放/偏移：默认走 settings.py，你可以在这里做“仅本流程”的覆盖
-    part_scale_by_view = default_part_scale_by_view(method_name=tweak_method_name)
-    part_offset_by_view = default_part_offset_by_view(method_name=tweak_method_name)
-    part_offset_mode = default_part_offset_mode(method_name=tweak_method_name)
+    segmenter_name = "mobile-sam" if mask_source == "sam" else "none"
+    # 视角缩放/偏移：按当前检测器 profile 读取。
+    part_scale_by_view = default_part_scale_by_view(profile_name=detector_name)
+    part_offset_by_view = default_part_offset_by_view(profile_name=detector_name)
+    part_offset_mode = default_part_offset_mode(profile_name=detector_name)
     segmenter_options: dict[str, Any] = {
         "model_path": str(model_dir / "sam" / "mobile_sam.pt"),
         "model_type": "vit_t",
@@ -223,8 +237,6 @@ def main():
     }
 
     # 输出控制
-    draw_landmarks = True
-    draw_part_boxes = True
     draw_segmentation_masks = True
     draw_segmentation_parts = True
     export_part_masks = True
@@ -263,7 +275,7 @@ def main():
     print("SAM 提示检测器:", detector_name)
     print("SAM 提示来源:", prompt_source)
 
-    min_conf = min_confidence_map.get(detector_name, default_min_confidence)
+    min_conf = min_confidence_map[detector_name]
     detector_options = detector_options_map.get(detector_name)
 
     detection_cache_root = output_root / "_detection_cache" / detector_name
@@ -322,36 +334,26 @@ def main():
                 else:
                     cache_miss_count += 1
                     if cache_miss_fallback_to_detector and detector is not None:
-                        try:
-                            detections = detector.detect(image)
-                            if save_detection_cache:
-                                _save_detections_cache(
-                                    cache_root=detection_cache_root,
-                                    rel_path=rel_path,
-                                    detector_name=detector_name,
-                                    detections=detections,
-                                )
-                        except Exception as exc:
-                            infer_failed_count += 1
-                            print(f"[sam-mask] 跳过(检测失败): {image_path} | {exc}")
-                            continue
+                        detections = detector.detect(image)
+                        if save_detection_cache:
+                            _save_detections_cache(
+                                cache_root=detection_cache_root,
+                                rel_path=rel_path,
+                                detector_name=detector_name,
+                                detections=detections,
+                            )
                     else:
                         print(f"[sam-mask] 跳过(缓存缺失): {image_path}")
                         continue
             else:
-                try:
-                    detections = detector.detect(image) if detector is not None else []
-                    if save_detection_cache:
-                        _save_detections_cache(
-                            cache_root=detection_cache_root,
-                            rel_path=rel_path,
-                            detector_name=detector_name,
-                            detections=detections,
-                        )
-                except Exception as exc:
-                    infer_failed_count += 1
-                    print(f"[sam-mask] 跳过(检测失败): {image_path} | {exc}")
-                    continue
+                detections = detector.detect(image) if detector is not None else []
+                if save_detection_cache:
+                    _save_detections_cache(
+                        cache_root=detection_cache_root,
+                        rel_path=rel_path,
+                        detector_name=detector_name,
+                        detections=detections,
+                    )
 
             if not detections:
                 no_face_count += 1
@@ -362,8 +364,6 @@ def main():
                     detections=[],
                     detector_name=f"{detector_label}+{segmenter_name}",
                     status_text="faces=0",
-                    draw_landmarks=draw_landmarks,
-                    draw_part_boxes=draw_part_boxes,
                     segmentation_masks=None,
                 )
                 preview_path = output_root / "preview" / rel_path
@@ -377,35 +377,49 @@ def main():
                 det.view_id = view_id
 
             # 按视角对关键点做“根本偏移”，影响后续所有框与分割提示。
-            offset_mode = str(segmenter_options.get("part_offset_mode", part_offset_mode)).strip().lower()
-            offset_map = get_view_offset_map(view_id, segmenter_options.get("part_offset_by_view"))
+            apply_landmark_offsets(
+                detections=detections,
+                view_id=view_id,
+                part_offset_by_view=segmenter_options.get("part_offset_by_view"),
+                part_offset_mode=str(segmenter_options.get("part_offset_mode", part_offset_mode)),
+            )
 
-            if offset_map:
-                for det in detections:
-                    x1, y1, x2, y2 = det.box
-                    face_w = max(1, x2 - x1)
-                    face_h = max(1, y2 - y1)
-
-                    if det.landmarks:
-                        new_landmarks = {}
-                        for name, (px, py) in det.landmarks.items():
-                            dx, dy = resolve_part_offset(name, offset_map, face_w, face_h, offset_mode)
-                            new_landmarks[name] = (int(px + dx), int(py + dy))
-                        det.landmarks = new_landmarks
-
-            try:
-                merged_masks = segmenter.segment(image=image, detections=detections)
-            except Exception as exc:
-                seg_failed_count += 1
-                print(f"[sam-mask] 跳过(分割失败): {image_path} | {exc}")
-                continue
-
-            # 读取分部位 mask（如果分割器支持）
             part_masks_list = None
-            if hasattr(segmenter, "last_part_masks"):
-                cand = getattr(segmenter, "last_part_masks", None)
-                if isinstance(cand, list) and len(cand) == len(detections):
-                    part_masks_list = cand
+            if mask_source == "sam":
+                try:
+                    merged_masks = segmenter.segment(image=image, detections=detections)
+                except Exception as exc:
+                    seg_failed_count += 1
+                    print(f"[sam-mask] 跳过(分割失败): {image_path} | {exc}")
+                    continue
+
+                # 读取分部位 mask（如果分割器支持）
+                if hasattr(segmenter, "last_part_masks"):
+                    cand = getattr(segmenter, "last_part_masks", None)
+                    if isinstance(cand, list) and len(cand) == len(detections):
+                        part_masks_list = cand
+            else:
+                # detector-box：直接用检测框生成鼻子/嘴巴/face mask
+                part_boxes_list = build_part_boxes_for_detections(
+                    detections=detections,
+                    image_w=w,
+                    image_h=h,
+                    part_names=PART_NAMES,
+                    part_scale_by_view=segmenter_options.get("part_scale_by_view"),
+                    part_offset_by_view=segmenter_options.get("part_offset_by_view"),
+                    part_offset_mode=str(segmenter_options.get("part_offset_mode", "ratio")).strip().lower(),
+                )
+                part_masks_list = []
+                merged_masks = []
+                for part_boxes in part_boxes_list:
+                    part_masks = {}
+                    for part_name, box in part_boxes.items():
+                        part_masks[part_name] = box_mask(box, h, w)
+                    part_masks_list.append(part_masks)
+                    merged = np.zeros((h, w), dtype=bool)
+                    for m in part_masks.values():
+                        merged |= m.astype(bool)
+                    merged_masks.append(merged)
 
             vis_masks = merged_masks
             if draw_segmentation_parts and part_masks_list is not None:
@@ -416,8 +430,6 @@ def main():
                 detections=detections,
                 detector_name=f"{detector_label}+{segmenter_name}",
                 status_text=f"faces={len(detections)}",
-                draw_landmarks=draw_landmarks,
-                draw_part_boxes=draw_part_boxes,
                 segmentation_masks=vis_masks if draw_segmentation_masks else None,
                 view_id=view_id,
                 part_scale_by_view=segmenter_options.get("part_scale_by_view"),
@@ -510,6 +522,7 @@ def main():
             f"detector={detector_name}",
             f"segmenter={segmenter_name}",
             f"prompt_source={prompt_source}",
+            f"mask_source={mask_source}",
         ],
     )
 

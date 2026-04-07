@@ -4,6 +4,11 @@
 输出：
 - 按“检测器名称/原始目录树”保存可视化图片；
 - 每张图画人脸框、置信度和关键点（若模型提供）。
+
+设计要点：
+1. 逐个检测器运行（避免多模型同时占用显存/内存）；
+2. 可选开启分割叠加，仅用于可视化，不影响检测本身；
+3. 所有输出都保持原始目录树，便于回溯原图位置。
 """
 
 from pathlib import Path
@@ -15,6 +20,7 @@ import cv2
 from .factory import create_face_detector, supported_detector_names
 from .segmentation import FaceSegmenter, create_face_segmenter
 from .settings import (
+    apply_landmark_offsets,
     default_detector_options,
     default_min_confidence_map,
     default_part_offset_mode,
@@ -37,7 +43,6 @@ def _format_faces(detections) -> str:
 
 def _write_lines(file_path: Path, lines: list[str]) -> None:
     """把文本行写入文件。"""
-    # 把文本行写入文件。
     file_path.parent.mkdir(parents=True, exist_ok=True)
     with file_path.open("w", encoding="utf-8") as f:
         for line in lines:
@@ -53,8 +58,6 @@ def run_one_detector(
     min_confidence: float,
     detector_options: dict[str, Any] | None,
     segmenter: FaceSegmenter,
-    draw_landmarks: bool,
-    draw_part_boxes: bool,
     draw_segmentation_masks: bool,
     draw_segmentation_parts: bool,
     print_box_info: bool,
@@ -62,7 +65,15 @@ def run_one_detector(
     part_offset_by_view: dict[str, dict[str, tuple[float, float]]],
     part_offset_mode: str,
 ):
-    """运行单个检测器并输出可视化结果。"""
+    """
+    运行单个检测器并输出可视化结果。
+
+    输入：
+    - detector_name: 检测器名称（factory 支持的别名）
+    - image_paths: 待处理图片路径列表（已按目录排序）
+    - input_root/output_root: 输入/输出根目录
+    - part_scale/offset: 视角微调参数（已按检测器 profile 读取）
+    """
     # 每次仅实例化一个检测器，避免多模型同时占用内存。
     detector = create_face_detector(
         detector_name=detector_name,
@@ -99,7 +110,15 @@ def run_one_detector(
                 print(f"[{detector_name}] 跳过(推理失败): {image_path} | {exc}")
                 continue
 
-            # 分割接口：开启后使用 SAM 对每张脸生成 mask（关闭则完全不影响检测流程）。
+            # 关键点偏移：直接修改检测结果，影响后续部位框 / 分割提示。
+            apply_landmark_offsets(
+                detections=detections,
+                view_id=view_id,
+                part_offset_by_view=part_offset_by_view,
+                part_offset_mode=part_offset_mode,
+            )
+
+            # 分割接口：仅在可视化时使用，不会影响检测框逻辑。
             segmentation_masks = [None for _ in detections]
             if draw_segmentation_masks and detections:
                 try:
@@ -128,8 +147,6 @@ def run_one_detector(
                 detections=detections,
                 detector_name=detector.detector_name,
                 status_text=f"faces={len(detections)}",
-                draw_landmarks=draw_landmarks,
-                draw_part_boxes=draw_part_boxes,
                 segmentation_masks=segmentation_masks,
                 view_id=view_id,
                 part_scale_by_view=part_scale_by_view,
@@ -163,8 +180,14 @@ def run_one_detector(
 
 
 def main():
-    """批量运行多个检测器并输出对比结果。"""
-    # 输入/输出/模型路径（集中管理）
+    """
+    批量运行多个检测器并输出对比结果。
+
+    说明：
+    - detectors_to_run 为空时，只输出统计框架。
+    - 视角微调按“检测器 profile”读取，避免流程维度耦合。
+    """
+    # 输入/输出/模型路径
     paths = default_paths()
     input_root = paths.input_root
     output_root = paths.output_root_detect
@@ -177,12 +200,11 @@ def main():
         # "scrfd",
         # "blazeface",
         # "mediapipe-landmarker",
-        # "yolov8-face",
+        "yolov8-face",
         # "centerface",
     ]
 
-    # 每个检测器置信度阈值
-    default_min_confidence = 0.5
+    # 每个检测器置信度阈值（必须在 settings 里显式给出）
     min_confidence_map = default_min_confidence_map()
 
     # 检测器专属参数（通用扩展入口）
@@ -192,10 +214,11 @@ def main():
     # 分割接口开关（默认关闭，不影响现有检测流程）
     enable_segmentation_refine = False
     segmenter_name = "mobile-sam"
-    tweak_method_name = "detect_compare"
-    part_scale_by_view = default_part_scale_by_view(method_name=tweak_method_name)
-    part_offset_by_view = default_part_offset_by_view(method_name=tweak_method_name)
-    part_offset_mode = default_part_offset_mode(method_name=tweak_method_name)
+    # detect_compare 是多检测器循环，这里先放“默认 profile”参数；
+    # 具体每个检测器会在循环里覆盖成自己的 profile 参数。
+    part_scale_by_view = default_part_scale_by_view(profile_name="")
+    part_offset_by_view = default_part_offset_by_view(profile_name="")
+    part_offset_mode = default_part_offset_mode(profile_name="")
     segmenter_options: dict[str, Any] = {
         # 轻量 SAM 权重默认位置
         "model_path": str(model_dir / "sam" / "mobile_sam.pt"),
@@ -208,10 +231,7 @@ def main():
         "part_offset_mode": part_offset_mode,
     }
 
-    # 是否绘制关键点（模型不提供时会自动跳过）
-    draw_landmarks = True
-    # 是否绘制眼睛/鼻子/嘴巴部位框（依赖关键点）
-    draw_part_boxes = True
+
     # 是否绘制分割 mask（需要 enable_segmentation_refine=True）
     draw_segmentation_masks = False
     # 是否按部位显示分割（face/eyes/nose/mouth 分别着色）
@@ -221,7 +241,7 @@ def main():
 
     # 随机抽样组数（按 input_root 第一层子目录计组）：
     # 0 表示不抽样，处理全部组。
-    random_group_count = 0
+    random_group_count = 10
     # 随机种子：保证每次抽样可复现；想每次不一样就改成当前时间戳。
     random_seed = 42
 
@@ -261,31 +281,38 @@ def main():
 
     try:
         for detector_name in detectors_to_run:
-            min_conf = min_confidence_map.get(detector_name, default_min_confidence)
+            # 视角缩放/偏移按“检测器 profile”读取，避免流程维度耦合。
+            part_scale_by_view = default_part_scale_by_view(profile_name=detector_name)
+            part_offset_by_view = default_part_offset_by_view(profile_name=detector_name)
+            part_offset_mode = default_part_offset_mode(profile_name=detector_name)
+
+            # 分割器若支持动态参数，按当前检测器 profile 更新。
+            if hasattr(segmenter, "part_scale_by_view"):
+                setattr(segmenter, "part_scale_by_view", part_scale_by_view)
+            if hasattr(segmenter, "part_offset_by_view"):
+                setattr(segmenter, "part_offset_by_view", part_offset_by_view)
+            if hasattr(segmenter, "part_offset_mode"):
+                setattr(segmenter, "part_offset_mode", part_offset_mode)
+
+            min_conf = min_confidence_map[detector_name]
             detector_options = detector_options_map.get(detector_name)
-            try:
-                stats = run_one_detector(
-                    detector_name=detector_name,
-                    image_paths=image_paths,
-                    input_root=input_root,
-                    output_root=output_root,
-                    model_dir=model_dir,
-                    min_confidence=min_conf,
-                    detector_options=detector_options,
-                    segmenter=segmenter,
-                    draw_landmarks=draw_landmarks,
-                    draw_part_boxes=draw_part_boxes,
-                    draw_segmentation_masks=draw_segmentation_masks,
-                    draw_segmentation_parts=draw_segmentation_parts,
-                    print_box_info=print_box_info,
-                    part_scale_by_view=part_scale_by_view,
-                    part_offset_by_view=part_offset_by_view,
-                    part_offset_mode=part_offset_mode,
-                )
-                stats_by_detector.append(stats)
-            except Exception as exc:
-                print(f"[{detector_name}] 初始化或运行失败: {exc}")
-                print(f"[{detector_name}] 已跳过，继续下一个检测器。")
+            stats = run_one_detector(
+                detector_name=detector_name,
+                image_paths=image_paths,
+                input_root=input_root,
+                output_root=output_root,
+                model_dir=model_dir,
+                min_confidence=min_conf,
+                detector_options=detector_options,
+                segmenter=segmenter,
+                draw_segmentation_masks=draw_segmentation_masks,
+                draw_segmentation_parts=draw_segmentation_parts,
+                print_box_info=print_box_info,
+                part_scale_by_view=part_scale_by_view,
+                part_offset_by_view=part_offset_by_view,
+                part_offset_mode=part_offset_mode,
+            )
+            stats_by_detector.append(stats)
     finally:
         segmenter.close()
 

@@ -13,7 +13,7 @@
 - 三个流程共用的默认路径、检测器阈值、视角缩放/偏移都在这里；
 - 各流程仍可在自己的文件里覆盖（例如只改 `sam_mask.py` 的视角参数）。
 - `sam_mask.py` 会直接落盘标准化后的 `face_mask`、连续鼻嘴 `inpaint_mask` 和 `feather_mask`；
-- `eye_mask.py` 会直接输出眼部打码后的图片；
+- `masking.py` 会直接输出眼部打码后的图片；
 - generation 侧不负责定义 mask 区域，只直接消费 detection 侧落盘结果。
 
 ---
@@ -262,17 +262,34 @@ generation 后续会在运行时直接扫描这些 detection 产物并构建 man
 
 说明：
 - `default_paths()` 支持环境变量覆盖（`FD_INPUT_ROOT` 等）；
-- 视角微调直接写在 [detection/settings.py](settings.py) 里的 `_view_tweaks_config()`；
+- 视角微调直接写在 [detection/settings.py](settings.py) 里的 `VIEW_TWEAKS_CONFIG`；
 - 视角用文件名 `1~6` 匹配；
 - 偏移使用 **ratio**（相对人脸框宽高），并且会影响关键点、部位框和 SAM 提示。
 - `sam_mask`、`segmentation`、`visualize` 都共用这份配置，改一处即可全局生效。
-- 配置结构是“顶层方法，下一层视角”：
-  - `methods.default.views."<id>"`：所有方法默认值
-  - `methods.<method_name>.views."<id>"`：某个方法的覆盖值
-- 当前已接入的方法名：
-  - `detect_compare`
-  - `eye_mask`
-  - `sam_mask`
+- 配置结构是“顶层检测器 profile，先 scale/offset，再视角”：
+  - `default.scale."<id>"`：所有检测器默认缩放
+  - `default.offset."<id>"`：所有检测器默认偏移
+  - `<detector_name>.scale."<id>"`：某个检测器的缩放覆盖
+  - `<detector_name>.offset."<id>"`：某个检测器的偏移覆盖
+- 当前支持的 detector profile：
+  - `mtcnn`
+  - `retinaface`
+  - `scrfd`
+  - `blazeface`
+  - `mediapipe-landmarker`
+  - `yolov8-face`
+  - `centerface`
+
+---
+
+## 3.2 当前保留文件（精简后）
+
+- `batch.py`：多检测器检测对比主流程
+- `masking.py`：眼部打码主流程（含检测框置黑）
+- `sam_mask.py`：SAM 分割主流程（含产物落盘）
+- `factory.py` / `backends.py` / `types.py`：检测器抽象与后端实现
+- `segmentation.py` / `visualize.py` / `artifacts.py`：分割、可视化、产物标准化
+- `settings.py`：全部共享配置入口
 
 ---
 
