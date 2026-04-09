@@ -145,7 +145,6 @@ def run_one_detector(
             vis = draw_face_detections(
                 image=image,
                 detections=detections,
-                detector_name=detector.detector_name,
                 status_text=f"faces={len(detections)}",
                 segmentation_masks=segmentation_masks,
                 view_id=view_id,
@@ -241,7 +240,7 @@ def main():
 
     # 随机抽样组数（按 input_root 第一层子目录计组）：
     # 0 表示不抽样，处理全部组。
-    random_group_count = 10
+    random_group_count = 50
     # 随机种子：保证每次抽样可复现；想每次不一样就改成当前时间戳。
     random_seed = 42
 

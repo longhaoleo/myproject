@@ -19,6 +19,7 @@ from .backends import (
     SCRFDDetector,
     YoloV8FaceDetector,
 )
+from .postprocess import SingleFaceAdaptiveDetector
 
 
 def _normalize_name(name: str) -> str:
@@ -52,20 +53,25 @@ def create_face_detector(
     创建检测器实例（统一入口）。
 
     detector_options 说明：
+    - 通用: single_face_only / adaptive_threshold_step
     - scrfd: det_size
     - yolov8-face: model_path / keypoint_confidence
     """
     # 统一归一化名称后再做分发。
     key = _normalize_name(detector_name)
     options = detector_options or {}
+    single_face_only = bool(options.get("single_face_only", True))
+    adaptive_threshold_step = float(options.get("adaptive_threshold_step", 0.02))
+
+    detector = None
 
     if key == "mtcnn":
-        return MTCNNDetector(model_dir=model_dir, min_confidence=min_confidence)
+        detector = MTCNNDetector(model_dir=model_dir, min_confidence=min_confidence)
 
-    if key == "retinaface":
-        return RetinaFaceDetector(model_dir=model_dir, min_confidence=min_confidence)
+    elif key == "retinaface":
+        detector = RetinaFaceDetector(model_dir=model_dir, min_confidence=min_confidence)
 
-    if key == "scrfd":
+    elif key == "scrfd":
         # SCRFD 常用可调项：输入尺寸 det_size。
         det_size = options.get("det_size", (640, 640))
         if (
@@ -73,19 +79,19 @@ def create_face_detector(
             or len(det_size) != 2
         ):
             raise ValueError(f"scrfd.det_size 参数非法: {det_size}")
-        return SCRFDDetector(
+        detector = SCRFDDetector(
             model_dir=model_dir,
             min_confidence=min_confidence,
             det_size=(int(det_size[0]), int(det_size[1])),
         )
 
-    if key == "blazeface":
-        return BlazeFaceDetector(model_dir=model_dir, min_confidence=min_confidence)
+    elif key == "blazeface":
+        detector = BlazeFaceDetector(model_dir=model_dir, min_confidence=min_confidence)
 
-    if key in {"mediapipe-landmarker", "face-landmarker", "landmarker"}:
-        return MediaPipeLandmarkerDetector(model_dir=model_dir, min_confidence=min_confidence)
+    elif key in {"mediapipe-landmarker", "face-landmarker", "landmarker"}:
+        detector = MediaPipeLandmarkerDetector(model_dir=model_dir, min_confidence=min_confidence)
 
-    if key in {"yolov8-face", "yolov8face", "yolov8-face-mod"}:
+    elif key in {"yolov8-face", "yolov8face", "yolov8-face-mod"}:
         # YOLOv8-Face 可调项：模型路径和关键点阈值。
         model_path_opt = options.get("model_path")
         model_path = (
@@ -94,15 +100,25 @@ def create_face_detector(
             else model_dir / "yolov8-face" / "yolov8_face.pt"
         )
         keypoint_confidence = float(options.get("keypoint_confidence", 0.2))
-        return YoloV8FaceDetector(
+        detector = YoloV8FaceDetector(
             model_path=model_path,
             min_confidence=min_confidence,
             keypoint_confidence=keypoint_confidence,
         )
 
-    if key == "centerface":
-        return CenterFaceDetector(model_dir=model_dir, min_confidence=min_confidence)
+    elif key == "centerface":
+        detector = CenterFaceDetector(model_dir=model_dir, min_confidence=min_confidence)
 
-    raise ValueError(
-        f"不支持的检测器: {detector_name}，可选值: {', '.join(supported_detector_names())}"
+    else:
+        raise ValueError(
+            f"不支持的检测器: {detector_name}，可选值: {', '.join(supported_detector_names())}"
+        )
+
+    if not single_face_only:
+        return detector
+
+    return SingleFaceAdaptiveDetector(
+        base_detector=detector,
+        min_confidence=min_confidence,
+        adaptive_threshold_step=adaptive_threshold_step,
     )

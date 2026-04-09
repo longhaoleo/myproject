@@ -296,15 +296,15 @@ def default_paths() -> ProjectPaths:
 def default_min_confidence_map() -> dict[str, float]:
     """不同检测器的默认置信度阈值。"""
     return {
-        # 数据已知全是人脸，阈值适当降低以减少漏检
-        "mtcnn": 0.6,
-        "retinaface": 0.5,
-        "scrfd": 0.5,
-        "blazeface": 0.4,
-        "mediapipe-landmarker": 0.25,
-        "yolov8-face": 0.25,
+        # 数据已知全是人脸，但默认阈值略上调，先压掉一部分弱框。
+        "mtcnn": 0.65,
+        "retinaface": 0.55,
+        "scrfd": 0.55,
+        "blazeface": 0.45,
+        "mediapipe-landmarker": 0.3,
+        "yolov8-face": 0.3,
         # CenterFace 容易出大量低质量框，阈值保持稍高
-        "centerface": 0.7,
+        "centerface": 0.75,
     }
 
 

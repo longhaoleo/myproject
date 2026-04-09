@@ -260,6 +260,7 @@ def _draw_segmentation_masks(canvas, segmentation_masks, alpha: float = 0.22):
 def draw_face_detections(
     image,
     detections: list[FaceDetection],
+    status_text: str = "",
     segmentation_masks=None,
     view_id: str | None = None,
     part_scale_by_view: dict[str, dict[str, tuple[float, float]]] | None = None,
@@ -279,6 +280,18 @@ def draw_face_detections(
     # 先叠加分割区域，再画框和关键点，视觉上更清晰。
     if segmentation_masks:
         _draw_segmentation_masks(canvas, segmentation_masks)
+
+    if status_text:
+        cv2.putText(
+            canvas,
+            str(status_text),
+            (12, 24),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.7,
+            (0, 255, 255),
+            2,
+            cv2.LINE_AA,
+        )
 
     for det in detections:
         active_view = getattr(det, "view_id", None) or view_id

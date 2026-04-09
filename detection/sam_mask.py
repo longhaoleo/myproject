@@ -33,6 +33,7 @@ from .artifacts import (
     standardize_part_masks,
 )
 from .factory import create_face_detector, supported_detector_names
+from .postprocess import enforce_single_face
 from .segmentation import PART_NAMES, build_part_boxes_for_detections, create_face_segmenter
 from .settings import (
     apply_landmark_offsets,
@@ -330,6 +331,10 @@ def main():
                     rel_path=rel_path,
                 )
                 if detections is not None:
+                    detections = enforce_single_face(
+                        detections=detections,
+                        min_confidence=min_conf,
+                    )
                     cache_hit_count += 1
                 else:
                     cache_miss_count += 1
