@@ -19,6 +19,7 @@ RUN_MODE = "infer"
 
 
 def main() -> None:
+    """按 RUN_MODE 或 GEN_RUN_MODE 调度 generation 主流程。"""
     mode = os.getenv("GEN_RUN_MODE", RUN_MODE).strip().lower()
 
     if mode == "train_lora":

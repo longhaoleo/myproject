@@ -44,6 +44,7 @@ def _normalize_views(raw_views: object) -> tuple[
     dict[str, dict[str, tuple[float, float]]],
     dict[str, dict[str, tuple[float, float]]],
 ]:
+    """把按视角写的 scale / offset 原始配置整理成统一结构。"""
     views = raw_views if isinstance(raw_views, dict) else {}
     part_scale_by_view: dict[str, dict[str, tuple[float, float]]] = {}
     part_offset_by_view: dict[str, dict[str, tuple[float, float]]] = {}
@@ -59,6 +60,7 @@ def _merge_nested_pairs(
     base: dict[str, dict[str, tuple[float, float]]],
     override: dict[str, dict[str, tuple[float, float]]],
 ) -> dict[str, dict[str, tuple[float, float]]]:
+    """把默认视角配置和方法覆盖配置合并到一起。"""
     merged = {str(view_id): dict(part_map) for view_id, part_map in base.items()}
     for view_id, part_map in override.items():
         target = merged.setdefault(str(view_id), {})
@@ -124,6 +126,7 @@ def resolve_part_offset(
     face_h: int,
     part_offset_mode: str = "ratio",
 ) -> tuple[int, int]:
+    """把部位偏移从配置值换算成像素值。"""
     if not offset_map:
         return 0, 0
     ox, oy = offset_map.get(canonical_part_name(part_name), (0.0, 0.0))

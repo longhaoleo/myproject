@@ -35,6 +35,7 @@ from .settings import (
 
 
 def _resolve_rel_path(paths: GenerationPaths, sample_path: str | Path) -> Path:
+    """把样本路径归一回原始输入树下的相对路径。"""
     path = Path(sample_path)
     for root in (paths.sanitized_root, paths.input_root, paths.depth_root, paths.inpaint_mask_root):
         try:
@@ -56,6 +57,7 @@ def _view_sort_key(view_id: str) -> tuple[int, int | str]:
 
 
 def _load_mask_bbox(path: Path) -> tuple[int, int, int, int] | None:
+    """从 mask 图中提取外接框，给 crop 逻辑复用。"""
     if not path.exists():
         return None
     mask = cv2.imread(str(path), cv2.IMREAD_GRAYSCALE)
@@ -73,6 +75,7 @@ def _expand_box(
     height: int,
     context_ratio: float,
 ) -> tuple[int, int, int, int] | None:
+    """给局部框加上下文边距，避免 crop 过紧。"""
     if box is None:
         return None
     x1, y1, x2, y2 = box
@@ -154,6 +157,7 @@ class _SdxlLoRADataset:
 
 
 def _collate_fn(examples: list[dict[str, Any]]) -> dict[str, Any]:
+    """把单样本字典拼成 batch 张量。"""
     import torch
 
     return {
@@ -279,6 +283,7 @@ def _order_train_samples_for_cases(
     samples: list[_TrainSample],
     config: LoRATrainConfig,
 ) -> list[_TrainSample]:
+    """按病例和视角重排训练样本，让一次梯度累积更容易看到同一个人。"""
     if not config.use_case_grouped_sampling or len(samples) <= 1:
         return samples
 
@@ -334,6 +339,7 @@ def _order_train_samples_for_cases(
 
 
 def _torch_dtype(name: str, device: torch.device) -> torch.dtype:
+    """把配置里的 dtype 名称转换成 torch.dtype。"""
     import torch
 
     key = str(name).strip().lower()
@@ -359,6 +365,7 @@ def _encode_prompts(
     text_encoders,
     device: torch.device,
 ) -> tuple[torch.Tensor, torch.Tensor]:
+    """把文本 prompt 编成 SDXL 需要的 prompt embeddings。"""
     prompt_embeds_list = []
     pooled_prompt_embeds = None
 
@@ -392,6 +399,7 @@ def _time_ids(batch_size: int, resolution: int, device: torch.device) -> torch.T
 
 
 def _save_lora_weights(save_dir: Path, unet) -> None:
+    """只保存 UNet LoRA 权重，避免把无关模块一起落盘。"""
     from diffusers import StableDiffusionXLInpaintPipeline
     from peft.utils import get_peft_model_state_dict
 

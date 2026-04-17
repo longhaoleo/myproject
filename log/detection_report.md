@@ -1,11 +1,11 @@
-# 报告1：阶段进展（按 report000 结构）
+# Detection 报告：阶段进展、方法演化与阶段性效果
 
 日期：2026-04-04
 
-## 1. 当前研究目的（对应 report000）
+## 1. 当前研究目的（对应 baseline_report）
 
-本阶段聚焦 `report000` 的阶段A目标：  
-在固定六视角数据上稳定“人脸检测 -> 部位定位 -> mask/分割条件构建”链路，为后续 `LoRA + ControlNet + Inpainting` 提供可靠输入条件。
+本阶段聚焦 `baseline_report` 的 detection 基线目标：  
+在固定六视角数据上稳定“人脸检测 -> 部位定位 -> mask/分割条件构建”链路，为后续 `SDXL Inpainting + LoRA` 主链及可选条件增强提供可靠输入条件。
 
 更具体地说，这一阶段不是训练最终生成模型，而是在解决生成前的基础条件问题：
 
@@ -14,11 +14,11 @@
 3. SAM 能否基于这些提示框生成可用的局部 mask。  
 4. 输出是否能保持目录树一致、便于后续批处理与训练集构建。  
 
-## 2. 本阶段已经做了什么
+## 2. 当前主逻辑与已落地方法
 
 本阶段已完成的工程工作如下：
 
-1. 建立统一入口 `face_detection_batch.py`，把流程拆成三个独立模式：
+1. 建立统一入口 `detection_batch.py`，把流程拆成三个独立模式：
    - `detect_compare`：多检测器横向对比
    - `eye_mask`：眼部打码
    - `sam_mask`：基于检测结果生成 SAM mask
@@ -37,12 +37,12 @@
 
 当前仓库已经形成了可复用的前处理子系统，主要对应：
 
-1. 检测对比：`face_detection/batch.py`  
-2. 打码流程：`face_detection/masking.py`  
-3. 分割流程：`face_detection/sam_mask.py`  
-4. 分割实现：`face_detection/segmentation.py`  
-5. 检测器后端：`face_detection/backends.py`  
-6. 参数与路径配置：`face_detection/settings.py`  
+1. 检测对比：`detection/batch.py`  
+2. 打码流程：`detection/masking.py`  
+3. 分割流程：`detection/sam_mask.py`  
+4. 分割实现：`detection/segmentation.py`  
+5. 检测器后端：`detection/backends.py`  
+6. 参数与路径配置：`detection/settings.py`  
 
 这意味着：  
 当前代码已经覆盖了“检测、提示框、mask、目录输出、统计”这一整层，后续可直接服务于 LoRA/ControlNet 训练集与推理链路构建。
@@ -116,7 +116,7 @@
    - 这一步的意义在于：  
      - 项目开始从“局部工具脚本”转成“为后续生成模型服务的前处理系统”
 
-## 5. 实测结果（20组样本）
+## 5. 主要尝试与效果（20组样本）
 
 下表是当前阶段最核心的实验记录，反映“速度 + 漏检 + 实操体验”的综合结果。
 
@@ -176,9 +176,9 @@
 3. `RetinaFace` 依赖 TensorFlow 路线，GPU 环境配置成本高，复现性一般。  
 4. 目前评价仍有主观成分，缺少统一的鼻部偏移量化指标。  
 
-## 9. 下一步计划（对齐 report000）
+## 9. 后续可能思路（对齐 baseline_report）
 
-1. 固化默认配置：`SCRFD + fallback + 六视角参数`。  
-2. 增加鼻部偏移量化指标，把“看起来偏不偏”变成可统计数值。  
-3. 在固定样本与全量样本分别复测，沉淀一份更标准的实验记录。  
-4. 完成阶段A后，进入阶段B：构建 LoRA 训练数据、风格触发词与条件输入规范。  
+1. 固化默认配置：`sam_mask / eye_mask / detect_compare` 共用的视角微调配置。  
+2. 继续围绕 `SCRFD / YOLOv8-Face / BlazeFace` 做检测质量与速度对比。  
+3. 把 detection 侧输出稳定维持为 generation 直接可消费的 `face_mask / inpaint_mask / feather_mask`。  
+4. 完成阶段A后，进入阶段B：继续迭代术前锚点、paired/unpaired 视角共存的小样本生成训练链路。  

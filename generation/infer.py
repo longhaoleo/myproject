@@ -29,6 +29,7 @@ from .settings import (
 
 
 def _resolve_rel_path(paths: GenerationPaths, sample_path: str | Path) -> Path:
+    """把样本路径归一回原始输入树下的相对路径。"""
     path = Path(sample_path)
     for root in (paths.sanitized_root, paths.input_root, paths.depth_root, paths.inference_root):
         try:
@@ -39,10 +40,12 @@ def _resolve_rel_path(paths: GenerationPaths, sample_path: str | Path) -> Path:
 
 
 def _mask_path(root: Path, rel_path: Path) -> Path:
+    """把相对路径映射成对应的 mask 输出路径。"""
     return (root / rel_path).with_suffix(".png")
 
 
 def _row_path(row: dict[str, Any], *keys: str) -> Path | None:
+    """按优先级从 manifest 行里取路径字段。"""
     for key in keys:
         value = str(row.get(key) or "").strip()
         if value:
@@ -51,14 +54,17 @@ def _row_path(row: dict[str, Any], *keys: str) -> Path | None:
 
 
 def _load_rgb_image(path: str | Path) -> Image.Image:
+    """读取并转成 RGB 图像。"""
     return Image.open(path).convert("RGB")
 
 
 def _load_gray_image(path: str | Path) -> Image.Image:
+    """读取并转成灰度图像。"""
     return Image.open(path).convert("L")
 
 
 def _load_mask_bbox(path: Path) -> tuple[int, int, int, int] | None:
+    """从 mask 图中提取外接框，供 face crop 使用。"""
     if not path.exists():
         return None
     mask = cv2.imread(str(path), cv2.IMREAD_GRAYSCALE)
@@ -71,6 +77,7 @@ def _load_mask_bbox(path: Path) -> tuple[int, int, int, int] | None:
 
 
 def _apply_privacy_fill(image_bgr: np.ndarray, mask: np.ndarray, fill_mode: str) -> np.ndarray:
+    """把隐私区域填黑或模糊，避免推理时继续暴露原始内容。"""
     if not mask.any():
         return image_bgr.copy()
     output = image_bgr.copy()
@@ -84,6 +91,7 @@ def _apply_privacy_fill(image_bgr: np.ndarray, mask: np.ndarray, fill_mode: str)
 
 
 def _load_binary_mask(path: Path) -> np.ndarray | None:
+    """读取二值 mask，失败返回 None。"""
     if not path.exists():
         return None
     mask = cv2.imread(str(path), cv2.IMREAD_GRAYSCALE)
@@ -93,6 +101,7 @@ def _load_binary_mask(path: Path) -> np.ndarray | None:
 
 
 def _blur_mask(mask: np.ndarray, blur_px: int) -> np.ndarray:
+    """把二值 mask 羽化成软边 alpha。"""
     kernel = max(1, int(blur_px))
     if kernel % 2 == 0:
         kernel += 1
@@ -100,12 +109,14 @@ def _blur_mask(mask: np.ndarray, blur_px: int) -> np.ndarray:
 
 
 def _stable_seed(parts: tuple[Any, ...], modulo: int = 2**31 - 1) -> int:
+    """把任意标识串稳定映射成整数种子。"""
     joined = "::".join(str(part) for part in parts).encode("utf-8")
     digest = hashlib.sha256(joined).digest()
     return int.from_bytes(digest[:8], "big") % modulo
 
 
 def _generator_seed(row: dict[str, Any], config: InferenceConfig, index: int) -> int:
+    """按病例和视角生成稳定随机种子，减少多视角漂移。"""
     if not config.shared_case_seed:
         return int(config.seed + index)
     case_hash = _stable_seed(("case", row.get("case_id", "")))
@@ -117,6 +128,7 @@ def _crop_box_or_full(
     image_shape: tuple[int, int],
     face_box: tuple[int, int, int, int] | None,
 ) -> tuple[int, int, int, int]:
+    """没有 face 框时直接退回整图，有 face 框时只保留人脸区域。"""
     height, width = image_shape[:2]
     if face_box is None:
         return 0, 0, width, height
@@ -125,6 +137,7 @@ def _crop_box_or_full(
 
 
 def _crop_array(array: np.ndarray, box: tuple[int, int, int, int]) -> np.ndarray:
+    """按框裁剪 numpy 数组。"""
     x1, y1, x2, y2 = box
     return array[y1:y2, x1:x2].copy()
 
@@ -134,6 +147,7 @@ def _paste_array(
     crop: np.ndarray,
     box: tuple[int, int, int, int],
 ) -> np.ndarray:
+    """把局部 crop 按原框位置贴回整图。"""
     x1, y1, x2, y2 = box
     output = base.copy()
     output[y1:y2, x1:x2] = crop
@@ -145,6 +159,7 @@ def _composite_with_mask(
     generated_bgr: np.ndarray,
     feather_mask_u8: np.ndarray,
 ) -> np.ndarray:
+    """按羽化 mask 把生成结果和原图混合。"""
     alpha = feather_mask_u8.astype(np.float32) / 255.0
     if alpha.ndim == 2:
         alpha = alpha[..., None]
@@ -161,6 +176,7 @@ def _make_preview(
     raw_bgr: np.ndarray,
     composite_bgr: np.ndarray,
 ) -> np.ndarray:
+    """把输入、mask、depth、raw、composite 拼成一张调试预览图。"""
     mask_bgr = cv2.cvtColor(mask_u8, cv2.COLOR_GRAY2BGR)
     height, width = input_bgr.shape[:2]
     tiles = [input_bgr, mask_bgr, depth_bgr, raw_bgr, composite_bgr]
@@ -169,6 +185,7 @@ def _make_preview(
 
 
 def _torch_dtype(name: str, device: torch.device) -> torch.dtype:
+    """把配置里的 dtype 名称转换成 torch.dtype。"""
     import torch
 
     key = str(name).strip().lower()
@@ -250,6 +267,7 @@ def _build_component_quant_config(config: InferenceConfig, component_name: str):
 
 
 def _load_pipeline(config: InferenceConfig, device: torch.device):
+    """按配置加载 SDXL Inpaint / ControlNet pipeline。"""
     from diffusers import StableDiffusionXLControlNetInpaintPipeline, StableDiffusionXLInpaintPipeline
 
     dtype = _torch_dtype(config.torch_dtype, device)

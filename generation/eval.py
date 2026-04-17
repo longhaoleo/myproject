@@ -25,6 +25,7 @@ from .settings import GenerationPaths, default_generation_paths, dump_config_sna
 
 
 def _resolve_rel_path(paths: GenerationPaths, sample_path: str | Path) -> Path:
+    """把样本路径归一回原始输入树下的相对路径。"""
     path = Path(sample_path)
     for root in (paths.sanitized_root, paths.input_root, paths.inference_root):
         try:
@@ -35,10 +36,12 @@ def _resolve_rel_path(paths: GenerationPaths, sample_path: str | Path) -> Path:
 
 
 def _png_path(root: Path, rel_path: Path) -> Path:
+    """把相对路径映射成 PNG 输出路径。"""
     return (root / rel_path).with_suffix(".png")
 
 
 def _concat_triptych(left: np.ndarray, middle: np.ndarray, right: np.ndarray) -> np.ndarray:
+    """把三张图拼成一个 triptych 结果图。"""
     height, width = left.shape[:2]
     tiles = [left, middle, right]
     resized = [cv2.resize(tile, (width, height), interpolation=cv2.INTER_AREA) for tile in tiles]
@@ -46,6 +49,7 @@ def _concat_triptych(left: np.ndarray, middle: np.ndarray, right: np.ndarray) ->
 
 
 def _load_mask(path: str | Path) -> np.ndarray | None:
+    """读取二值 mask，失败返回 None。"""
     mask = cv2.imread(str(path), cv2.IMREAD_GRAYSCALE)
     if mask is None:
         return None
@@ -53,6 +57,7 @@ def _load_mask(path: str | Path) -> np.ndarray | None:
 
 
 def _dilate_mask(mask: np.ndarray, kernel_size: int = 15) -> np.ndarray:
+    """对 mask 做轻微膨胀，得到更保守的非编辑区。"""
     kernel_size = max(1, int(kernel_size))
     if kernel_size % 2 == 0:
         kernel_size += 1
@@ -61,6 +66,7 @@ def _dilate_mask(mask: np.ndarray, kernel_size: int = 15) -> np.ndarray:
 
 
 def _region_embedding(image_bgr: np.ndarray, region_mask: np.ndarray) -> np.ndarray | None:
+    """把一个区域压成稳定的轻量特征向量，用于粗粒度相似度比较。"""
     ys, xs = np.where(region_mask)
     if xs.size == 0 or ys.size == 0:
         return None
@@ -85,6 +91,7 @@ def _region_embedding(image_bgr: np.ndarray, region_mask: np.ndarray) -> np.ndar
 
 
 def _cosine_similarity(lhs: np.ndarray | None, rhs: np.ndarray | None) -> float | None:
+    """计算两个区域特征向量的余弦相似度。"""
     if lhs is None or rhs is None:
         return None
     return float(np.clip(np.dot(lhs, rhs), -1.0, 1.0))
@@ -96,6 +103,7 @@ def _region_similarities(
     face_mask: np.ndarray | None,
     inpaint_mask: np.ndarray | None,
 ) -> tuple[float | None, float | None]:
+    """同时计算 hard identity 和 soft face 两类一致性分数。"""
     if face_mask is None:
         return None, None
     soft_region = face_mask
@@ -117,12 +125,14 @@ def _region_similarities(
 
 
 def _placeholder_tile(reference: np.ndarray, label: str) -> np.ndarray:
+    """为缺失视角生成占位图。"""
     tile = np.full_like(reference, 24)
     cv2.putText(tile, label, (12, max(24, tile.shape[0] // 2)), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (220, 220, 220), 2)
     return tile
 
 
 def _build_case_sheet(case_rows: dict[str, dict[str, dict[str, Any]]], case_id: str) -> np.ndarray | None:
+    """把同病例多视角的 pre / post / pred 拼成一张病例总览图。"""
     case_map = case_rows.get(case_id, {})
     if not case_map:
         return None

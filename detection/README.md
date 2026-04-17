@@ -6,6 +6,7 @@
 2. 眼部打码：`masking.py`
 3. SAM 分割批处理：`sam_mask.py`
 4. 分割模块：`segmentation.py`（供 `sam_mask.py` 调用）
+5. 部位框共享逻辑：`part_boxes.py`（`segmentation.py` / `visualize.py` 共用）
 
 统一入口：`python detection_batch.py`
 
@@ -241,6 +242,7 @@ generation 后续会在运行时直接扫描这些 detection 产物并构建 man
 - `default_detector_options()`：检测器专属参数
 - `default_part_scale_by_view()`：按视角缩放部位框（ratio）
 - `default_part_offset_by_view()`：按视角偏移部位（ratio）
+- `detection/part_boxes.py`：统一维护部位框的基础定义与生成逻辑
 
 说明：
 - `default_paths()` 支持环境变量覆盖（`FD_INPUT_ROOT` 等）；
@@ -248,6 +250,7 @@ generation 后续会在运行时直接扫描这些 detection 产物并构建 man
 - 视角用文件名 `1~6` 匹配；
 - 偏移使用 **ratio**（相对人脸框宽高），并且会影响关键点、部位框和 SAM 提示。
 - `sam_mask`、`segmentation`、`visualize` 都共用这份配置，改一处即可全局生效。
+- 部位框的基础定义现在统一在 `detection/part_boxes.py`，`segmentation` 和 `visualize` 不再各写一份。
 - 配置结构是“顶层方法，下一层视角”：
   - `methods.default.views."<id>"`：所有方法默认值
   - `methods.<method_name>.views."<id>"`：某个方法的覆盖值

@@ -5,7 +5,8 @@
 import cv2
 import numpy as np
 
-from .settings import get_view_offset_map, get_view_scale_map, resolve_part_offset
+from .part_boxes import build_part_prompt_boxes, normalize_landmarks
+from .settings import get_view_offset_map, resolve_part_offset
 from .types import FaceDetection
 
 
@@ -33,75 +34,6 @@ SEG_MASK_COLORS = {
     "nose": (0, 160, 255),
     "mouth": (255, 0, 180),
 }
-
-LANDMARK_ALIASES = {
-    "left_eye": "left_eye",
-    "lefteye": "left_eye",
-    "right_eye": "right_eye",
-    "righteye": "right_eye",
-    "nose": "nose",
-    "nose_tip": "nose",
-    "nosetip": "nose",
-    "mouth": "mouth",
-    "mouth_center": "mouth",
-    "mouthcenter": "mouth",
-    "mouth_left": "mouth_left",
-    "mouthleft": "mouth_left",
-    "left_mouth": "mouth_left",
-    "leftmouth": "mouth_left",
-    "mouth_right": "mouth_right",
-    "mouthright": "mouth_right",
-    "right_mouth": "mouth_right",
-    "rightmouth": "mouth_right",
-}
-
-
-def _normalize_landmarks(landmarks: dict[str, tuple[int, int]]) -> dict[str, tuple[int, int]]:
-    """把不同后端关键点命名映射到统一语义。"""
-    # 把不同后端的关键点命名归一化为统一语义。
-    normalized: dict[str, tuple[int, int]] = {}
-    for raw_name, point in landmarks.items():
-        key = str(raw_name).strip().lower().replace("-", "_").replace(" ", "_")
-        alias = LANDMARK_ALIASES.get(key)
-        if alias is None:
-            alias = LANDMARK_ALIASES.get(key.replace("_", ""))
-        if alias is not None:
-            normalized[alias] = point
-    return normalized
-
-
-def _clip_rect(x1: int, y1: int, x2: int, y2: int, w: int, h: int):
-    """裁剪矩形到图像边界，非法则返回 None。"""
-    # 约束框在图像边界内。
-    x1 = max(0, min(w - 1, x1))
-    y1 = max(0, min(h - 1, y1))
-    x2 = max(0, min(w - 1, x2))
-    y2 = max(0, min(h - 1, y2))
-    if x2 <= x1 or y2 <= y1:
-        return None
-    return x1, y1, x2, y2
-
-
-def _box_from_center(
-    center_x: int,
-    center_y: int,
-    box_w: int,
-    box_h: int,
-    image_w: int,
-    image_h: int,
-):
-    """根据中心点与尺寸构造框，并裁剪到图像边界。"""
-    half_w = max(1, box_w // 2)
-    half_h = max(1, box_h // 2)
-    return _clip_rect(
-        center_x - half_w,
-        center_y - half_h,
-        center_x + half_w,
-        center_y + half_h,
-        image_w,
-        image_h,
-    )
-
 
 def _draw_part_box(canvas, box: tuple[int, int, int, int], part_name: str):
     """绘制单个部位框与标签。"""
@@ -131,104 +63,23 @@ def _draw_semantic_part_boxes(
     part_offset_mode: str = "ratio",
 ):
     """依据关键点估计并绘制眼/鼻/嘴部位框。"""
-    # 基于关键点估计眼睛/鼻子/嘴巴的部位框。
     if not det.landmarks:
         return
 
-    h, w = canvas.shape[:2]
-    face_x1, face_y1, face_x2, face_y2 = det.box
-    face_w = max(1, face_x2 - face_x1)
-    face_h = max(1, face_y2 - face_y1)
-
-    lm = _normalize_landmarks(det.landmarks)
-
-    # 眼睛框：由眼睛关键点中心点 + 人脸比例得到。
-    eye_w = max(12, int(face_w * 0.22))
-    eye_h = max(10, int(face_h * 0.14))
-    scale_map = get_view_scale_map(view_id, part_scale_by_view)
-    offset_map = get_view_offset_map(view_id, part_offset_by_view)
-    eye_sx, eye_sy = scale_map.get("left_eye", (1.0, 1.0))
-    eye_ox, eye_oy = resolve_part_offset("left_eye", offset_map, face_w, face_h, part_offset_mode)
-    if "left_eye" in lm:
-        ex, ey = lm["left_eye"]
-        eye_box = _box_from_center(
-            ex + int(round(eye_ox)),
-            ey + int(round(eye_oy)),
-            max(1, int(round(eye_w * float(eye_sx)))),
-            max(1, int(round(eye_h * float(eye_sy)))),
-            w,
-            h,
-        )
-        if eye_box is not None:
-            _draw_part_box(canvas, eye_box, "left_eye")
-    eye_sx, eye_sy = scale_map.get("right_eye", (1.0, 1.0))
-    eye_ox, eye_oy = resolve_part_offset("right_eye", offset_map, face_w, face_h, part_offset_mode)
-    if "right_eye" in lm:
-        ex, ey = lm["right_eye"]
-        eye_box = _box_from_center(
-            ex + int(round(eye_ox)),
-            ey + int(round(eye_oy)),
-            max(1, int(round(eye_w * float(eye_sx)))),
-            max(1, int(round(eye_h * float(eye_sy)))),
-            w,
-            h,
-        )
-        if eye_box is not None:
-            _draw_part_box(canvas, eye_box, "right_eye")
-
-    # 鼻子框：由鼻尖关键点 + 人脸比例得到。
-    if "nose" in lm:
-        nx, ny = lm["nose"]
-        # 鼻子框水平向放宽，便于观察覆盖范围。
-        nose_w = max(16, int(face_w * 0.26))
-        nose_h = max(12, int(face_h * 0.22))
-        nose_sx, nose_sy = scale_map.get("nose", (1.0, 1.0))
-        nose_ox, nose_oy = resolve_part_offset("nose", offset_map, face_w, face_h, part_offset_mode)
-        nose_box = _box_from_center(
-            nx + int(round(nose_ox)),
-            ny + int(round(nose_oy)),
-            max(1, int(round(nose_w * float(nose_sx)))),
-            max(1, int(round(nose_h * float(nose_sy)))),
-            w,
-            h,
-        )
-        if nose_box is not None:
-            _draw_part_box(canvas, nose_box, "nose")
-
-    # 嘴巴框：优先用左右嘴角合成更稳定的框；没有嘴角时退化到 mouth 中心点。
-    mouth_sx, mouth_sy = scale_map.get("mouth", (1.0, 1.0))
-    mouth_ox, mouth_oy = resolve_part_offset("mouth", offset_map, face_w, face_h, part_offset_mode)
-    if "mouth_left" in lm and "mouth_right" in lm:
-        mlx, mly = lm["mouth_left"]
-        mrx, mry = lm["mouth_right"]
-        pad_x = max(6, int(face_w * 0.05))
-        half_h = max(6, int(face_h * 0.08))
-        pad_x = int(round(pad_x * float(mouth_sx)))
-        half_h = int(round(half_h * float(mouth_sy)))
-        mouth_box = _clip_rect(
-            min(mlx, mrx) - pad_x + mouth_ox,
-            int((mly + mry) / 2) - half_h + mouth_oy,
-            max(mlx, mrx) + pad_x + mouth_ox,
-            int((mly + mry) / 2) + half_h + mouth_oy,
-            w,
-            h,
-        )
-        if mouth_box is not None:
-            _draw_part_box(canvas, mouth_box, "mouth")
-    elif "mouth" in lm:
-        mx, my = lm["mouth"]
-        mouth_w = max(14, int(face_w * 0.30))
-        mouth_h = max(10, int(face_h * 0.16))
-        mouth_box = _box_from_center(
-            mx + int(round(mouth_ox)),
-            my + int(round(mouth_oy)),
-            max(1, int(round(mouth_w * float(mouth_sx)))),
-            max(1, int(round(mouth_h * float(mouth_sy)))),
-            w,
-            h,
-        )
-        if mouth_box is not None:
-            _draw_part_box(canvas, mouth_box, "mouth")
+    part_boxes = build_part_prompt_boxes(
+        det,
+        image_w=canvas.shape[1],
+        image_h=canvas.shape[0],
+        part_names=("left_eye", "right_eye", "nose", "mouth"),
+        view_id=view_id,
+        part_scale_by_view=part_scale_by_view,
+        part_offset_by_view=part_offset_by_view,
+        part_offset_mode=part_offset_mode,
+    )
+    for part_name in ("left_eye", "right_eye", "nose", "mouth"):
+        box = part_boxes.get(part_name)
+        if box is not None:
+            _draw_part_box(canvas, box, part_name)
 
 
 def _draw_segmentation_masks(canvas, segmentation_masks, alpha: float = 0.22):

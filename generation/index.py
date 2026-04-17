@@ -89,6 +89,7 @@ def _preferred_image_path(paths: GenerationPaths, rel_path: Path) -> tuple[Path,
 
 
 def _build_case_split(case_ids: list[str], train_ratio: float, val_ratio: float, seed: int) -> dict[str, str]:
+    """按病例随机切分 train / val / test，避免同一病例泄漏到不同集合。"""
     import numpy as np
 
     rng = np.random.default_rng(seed)

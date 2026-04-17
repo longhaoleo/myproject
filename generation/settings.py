@@ -163,6 +163,7 @@ def dataclass_to_dict(config: Any) -> dict[str, Any]:
 
 
 def _normalize_for_json(value: Any) -> Any:
+    """递归把 Path / tuple / dict 等配置值转成 JSON 可写形式。"""
     if isinstance(value, Path):
         return str(value)
     if isinstance(value, dict):

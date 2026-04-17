@@ -9,6 +9,7 @@ RUN_MODE = "detect_compare"
 
 
 def main() -> None:
+    """按 RUN_MODE 调度 detection 主流程。"""
     mode = RUN_MODE.strip().lower()
     if mode == "detect_compare":
         from detection.batch import main as run_detect_compare
