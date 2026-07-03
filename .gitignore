@@ -12,7 +12,8 @@ myenv/
 .codex
 
 model/*
-model/.gitkeep
+!model/.gitkeep
+!model/README.md
 
 runs/
 output/

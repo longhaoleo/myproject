@@ -176,19 +176,19 @@ def default_paths() -> ProjectPaths:
     - FD_PREVIEW_ROOT_MASK
     """
     return ProjectPaths(
-        input_root=Path(os.getenv("FD_INPUT_ROOT", "~/datasets/deformity")).expanduser(),
+        input_root=Path(os.getenv("FD_INPUT_ROOT", "~/deformity")).expanduser(),
         model_dir=Path(os.getenv("FD_MODEL_DIR", "model")).expanduser(),
         output_root_detect=Path(
-            os.getenv("FD_OUTPUT_ROOT_DETECT", "~/datasets/deformity_face_detection_preview")
+            os.getenv("FD_OUTPUT_ROOT_DETECT", "~/deformity_face_detection_preview")
         ).expanduser(),
         output_root_mask=Path(
-            os.getenv("FD_OUTPUT_ROOT_MASK", "~/datasets/deformity_masked")
+            os.getenv("FD_OUTPUT_ROOT_MASK", "~/deformity_masked")
         ).expanduser(),
         output_root_sam=Path(
-            os.getenv("FD_OUTPUT_ROOT_SAM", "~/datasets/deformity_sam_mask")
+            os.getenv("FD_OUTPUT_ROOT_SAM", "~/deformity_sam_mask")
         ).expanduser(),
         preview_root_mask=Path(
-            os.getenv("FD_PREVIEW_ROOT_MASK", "~/datasets/deformity_detection_preview")
+            os.getenv("FD_PREVIEW_ROOT_MASK", "~/deformity_detection_preview")
         ).expanduser(),
     )
 
@@ -198,13 +198,13 @@ def default_min_confidence_map() -> dict[str, float]:
     return {
         # 数据已知全是人脸，阈值适当降低以减少漏检
         "mtcnn": 0.6,
-        "retinaface": 0.5,
         "scrfd": 0.5,
         "blazeface": 0.4,
-        "mediapipe-landmarker": 0.25,
         "yolov8-face": 0.25,
-        # CenterFace 容易出大量低质量框，阈值保持稍高
-        "centerface": 0.7,
+        # 非默认保留入口，当前主线不启用：
+        # "retinaface": 0.5,
+        # "mediapipe-landmarker": 0.25,
+        # "centerface": 0.7,
     }
 
 
@@ -234,9 +234,8 @@ def default_part_offset_mode(method_name: str = "") -> str:
     return load_view_tweaks(method_name=method_name).part_offset_mode
 
 
-# ---------------------------------------------------------------------------
+
 # View Tweaks Config
-# ---------------------------------------------------------------------------
 # 这块是“纯配置区”：
 # - 顶层按方法分
 # - 方法下面按视角分

@@ -99,6 +99,7 @@ class GenerationPipelineTest(unittest.TestCase):
         self.assertTrue(rows[0]["image_path"].endswith("/prepared/sanitized/1/术前/1.png"))
         self.assertTrue(rows[0]["inpaint_mask_path"].endswith("1/术前/1.png"))
         self.assertTrue(rows[0]["face_mask_path"].endswith("1/术前/1.png"))
+        self.assertTrue(rows[0]["mouth_mask_path"].endswith("1/术前/1.png"))
         self.assertEqual(rows[0]["available_pre_views"], ["1", "2", "3"])
         self.assertEqual(rows[0]["available_post_views"], ["1", "2", "4"])
         self.assertEqual(rows[0]["paired_views"], ["1", "2"])
@@ -158,19 +159,19 @@ class GenerationPipelineTest(unittest.TestCase):
         self.assertEqual(_generator_seed(row_a, config, 0), _generator_seed(row_a, config, 9))
         self.assertNotEqual(_generator_seed(row_a, config, 0), _generator_seed(row_b, config, 0))
 
-    def test_training_samples_use_masked_inputs_and_unpaired_self_reconstruction(self) -> None:
+    def test_training_samples_use_post_face_inpaint_baseline(self) -> None:
         self._seed_case()
         rows = build_generation_manifest(paths=self.paths)
         samples = _build_training_samples(rows, self.paths, LoRATrainConfig())
-        self.assertEqual(len(samples), 6)
+        self.assertEqual(len(samples), 3)
         sample_types = [sample.sample_type for sample in samples]
-        self.assertEqual(sample_types.count("paired_head_reference"), 2)
-        self.assertEqual(sample_types.count("paired_edit_crop"), 2)
-        self.assertEqual(sample_types.count("self_identity_head"), 2)
+        self.assertEqual(sample_types.count("post_face_inpaint"), 3)
         for sample in samples:
             self.assertIn("/prepared/sanitized/", sample.condition_image_path)
+            self.assertIn("/术后/", sample.condition_image_path)
+            self.assertEqual(sample.condition_image_path, sample.target_image_path)
             self.assertIn("/inpaint_mask/", sample.inpaint_mask_path)
-        self.assertTrue(any(sample.condition_image_path == sample.target_image_path for sample in samples if sample.sample_type == "self_identity_head"))
+            self.assertEqual(sample.crop_box, (8, 8, 56, 56))
 
 
 if __name__ == "__main__":

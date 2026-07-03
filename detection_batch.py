@@ -5,12 +5,15 @@
     python detection_batch.py
 """
 
-RUN_MODE = "detect_compare"
+import os
+
+
+RUN_MODE = "box_artifacts"
 
 
 def main() -> None:
     """按 RUN_MODE 调度 detection 主流程。"""
-    mode = RUN_MODE.strip().lower()
+    mode = os.getenv("FD_RUN_MODE", RUN_MODE).strip().lower()
     if mode == "detect_compare":
         from detection.batch import main as run_detect_compare
 
@@ -21,6 +24,11 @@ def main() -> None:
 
         run_eye_mask()
         return
+    if mode == "box_artifacts":
+        from detection.box_artifacts import main as run_box_artifacts
+
+        run_box_artifacts()
+        return
     if mode == "sam_mask":
         from detection.sam_mask import main as run_sam_mask
 
@@ -28,7 +36,7 @@ def main() -> None:
         return
 
     raise ValueError(
-        f"不支持的 RUN_MODE: {RUN_MODE}。可选值：detect_compare / eye_mask / sam_mask"
+        f"不支持的 RUN_MODE: {mode}。可选值：detect_compare / eye_mask / box_artifacts / sam_mask"
     )
 
 

@@ -4,9 +4,10 @@
 
 1. 人脸检测可视化对比：`batch.py`
 2. 眼部打码：`masking.py`
-3. SAM 分割批处理：`sam_mask.py`
-4. 分割模块：`segmentation.py`（供 `sam_mask.py` 调用）
-5. 部位框共享逻辑：`part_boxes.py`（`segmentation.py` / `visualize.py` 共用）
+3. 矩形 mask 产物生成：`box_artifacts.py`
+4. SAM 分割批处理：`sam_mask.py`
+5. 分割模块：`segmentation.py`（供 `sam_mask.py` 调用）
+6. 部位框共享逻辑：`part_boxes.py`（`segmentation.py` / `visualize.py` 共用）
 
 统一入口：`python detection_batch.py`
 
@@ -14,6 +15,7 @@
 - 三个流程共用的默认路径、检测器阈值、视角缩放/偏移都在这里；
 - 各流程仍可在自己的文件里覆盖（例如只改 `sam_mask.py` 的视角参数）。
 - `sam_mask.py` 会直接落盘标准化后的 `face_mask`、连续鼻嘴 `inpaint_mask` 和 `feather_mask`；
+- `box_artifacts.py` 不跑 SAM，直接用检测框/关键点落盘同样结构的矩形 mask 产物；
 - `eye_mask.py` 会直接输出眼部打码后的图片；
 - generation 侧不负责定义 mask 区域，只直接消费 detection 侧落盘结果。
 
@@ -22,7 +24,7 @@
 ## 1. 运行前准备（环境版本）
 
 建议统一使用 `Python 3.10` 的同一个环境（例如 `myenv`），不要混用 `/opt/micromamba/bin/python` 和 conda 环境。
-当前依赖已按“单环境可安装”整理：`mediapipe + tensorflow==2.15.1`，不需要单独安装 `tf-keras`。
+当前依赖已按主线检测器整理：`MTCNN / SCRFD / BlazeFace / YOLOv8-Face`。`RetinaFace / MediaPipe FaceLandmarker / CenterFace` 仍保留代码入口，但不再作为默认主线安装和运行。
 
 ### 1.1 CPU 环境（默认）
 
@@ -65,7 +67,7 @@ python -c "import onnxruntime as ort; print('ort providers:', ort.get_available_
 python - <<'PY'
 mods = [
     "cv2", "numpy", "mediapipe", "torch", "facenet_pytorch",
-    "retinaface", "insightface", "onnxruntime", "ultralytics", "mobile_sam"
+    "insightface", "onnxruntime", "ultralytics", "mobile_sam"
 ]
 for m in mods:
     try:
@@ -207,6 +209,7 @@ python -m pip install /tmp/MobileSAM.zip
 
 - `RUN_MODE = "detect_compare"`：检测可视化
 - `RUN_MODE = "eye_mask"`：眼部打码
+- `RUN_MODE = "box_artifacts"`：检测框矩形 mask 产物
 - `RUN_MODE = "sam_mask"`：SAM 分割批处理
 
 然后执行：
@@ -227,7 +230,8 @@ run_detect_compare()  # 或 run_eye_mask() / run_sam_mask()
 
 如需给 generation 准备输入条件，直接运行：
 
-1. `sam_mask`：生成 `parts/`、`inpaint_mask/`、`feather_mask/`
+1. `box_artifacts`：快速生成矩形 `parts/`、`inpaint_mask/`、`feather_mask/`
+   - 或 `sam_mask`：用 SAM 生成更细的分割结果
 2. `eye_mask`：按需生成打码图
 
 generation 后续会在运行时直接扫描这些 detection 产物并构建 manifest，不再需要单独的准备步骤。
@@ -296,12 +300,11 @@ draw_segmentation_parts = True
 已支持检测器：
 
 - `mtcnn`
-- `retinaface`
 - `scrfd`
 - `blazeface`
-- `mediapipe-landmarker`
 - `yolov8-face`
-- `centerface`
+
+非默认保留入口：`retinaface / mediapipe-landmarker / centerface`。
 
 ---
 
@@ -309,7 +312,7 @@ draw_segmentation_parts = True
 
 配置文件：`detection/sam_mask.py`
 
-- `detector_name`：用哪个检测器给 SAM 提示框（建议 `mediapipe-landmarker`）
+- `detector_name`：用哪个检测器给 SAM 提示框（默认建议 `scrfd`）
 - `prompt_source`：提示来源（`detector` 直接检测 / `cache` 复用历史检测结果）
 - `cache_miss_fallback_to_detector`：缓存缺失时是否回退检测器
 - `save_detection_cache`：是否保存检测结果到 `_detection_cache`

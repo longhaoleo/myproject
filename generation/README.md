@@ -59,14 +59,15 @@ SAM 部位 mask 沿用 `detection/sam_mask.py` 的输出：
 负责：
 
 1. 运行时直接从 detection 输出构建 manifest，并按 `case_id` 进行 train / val / test 切分
-2. 主监督固定使用 `术前 -> 同视角术后` 的配对样本，锚点是术前视角
-3. 同时构建三类训练样本
-   - `paired_head_reference`：`face` 框内头部参考图
-   - `paired_edit_crop`：鼻嘴联合 crop 图
-   - `self_identity_head`：单边缺视角时的低权重自重建样本
-4. 默认使用打码图作为条件图和主输入；`face_mask / inpaint_mask / feather_mask` 一律复用 detection 侧产物
-5. 训练顺序默认按病例分组，尽量让同一个人的多个视角落到同一梯度累积周期里
-6. 落盘 checkpoint、最终 LoRA 权重和训练摘要
+2. 当前 baseline 只使用 `术后` 样本
+3. 每个训练样本统一构造成 `post_face_inpaint`
+   - `condition_image`：术后图的正方形 `face` crop
+   - `target_image`：同一张术后图的正方形 `face` crop
+   - `mask`：同一张术后图的连续鼻嘴 `inpaint_mask`
+4. 训练时在同一张 face crop 里把鼻嘴区域挖空，让模型学习补回术后鼻嘴
+5. face crop 和 mask crop 直接 resize 到训练分辨率，不再用额外 padding
+6. 术前图、术前到术后配对监督、多视角参考和缺视角利用先作为后续工作
+7. 落盘 checkpoint、最终 LoRA 权重和训练摘要
 
 #### `infer`
 
@@ -114,9 +115,9 @@ SAM 部位 mask 沿用 `detection/sam_mask.py` 的输出：
 
 说明：
 
-1. 训练阶段通过 `paired_head_reference` 和病例级分组采样来稳定人物一致性
+1. 当前训练 baseline 先验证术后 face crop 内的鼻嘴 inpainting 能否稳定学会
 2. 评估阶段通过 `hard_identity_similarity` 和 `soft_face_similarity` 做轻量验收
-3. 这是 v1 的折中方案，后续可以升级为显式的 identity / perceptual consistency loss
+3. 术前参考、多视角一致性和显式 identity / perceptual consistency loss 都放到后续版本
 
 ## 2. 依赖安装
 
@@ -302,6 +303,6 @@ summaries/
 
 1. v1 只训练 LoRA，不训练自定义 ControlNet。
 2. 默认不接 IP-Adapter。
-3. 当前训练侧是“最小闭环实现”，优先保证链路打通，而不是先做复杂训练技巧。
+3. 当前训练侧是“术后 face crop inpainting 自监督 baseline”，优先验证 crop/mask/LoRA 链路，而不是先做术前到术后的完整预测 recipe。
 4. 当前默认不启用 depth；如果后续重新打开，depth 生成支持 `transformers` 和 `opencv-luma fallback` 两条路。
 5. 当前 `FP8` 支持只接在推理侧；训练侧仍是常规精度加载。

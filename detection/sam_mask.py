@@ -181,16 +181,9 @@ def main():
     output_root = paths.output_root_sam
     model_dir = paths.model_dir
 
-    # 选择用于提供 SAM 提示的人脸检测器（改这一行即可切换）
-    # 可选值：
-    # - "mediapipe-landmarker"：关键点细，SAM 部位提示更稳
-    # - "scrfd"：速度与精度均衡（5点关键点）
-    # - "yolov8-face"：依赖你本地权重质量（5点关键点）
-    # - "retinaface"：检测较稳，但关键点命名来自第三方实现
-    # - "mtcnn"：侧脸兜底可用，但框稳定性一般
-    # - "blazeface"：速度快，关键点少，部位框粗
-    # - "centerface"：轻量 ONNX，关键点能力一般
-    detector_name = "yolov8-face"
+    # 选择用于提供 SAM 提示的人脸检测器（改这一行即可切换）。
+    # 当前主线只保留：scrfd / yolov8-face / mtcnn / blazeface。
+    detector_name = "scrfd"
     # 提示来源开关：
     # - "detector"（默认）：每次直接跑检测器，再喂给 SAM
     # - "cache"：优先读取历史检测缓存（适合“前一步检测已完成，再跑 SAM”）

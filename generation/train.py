@@ -3,14 +3,13 @@ SDXL Inpainting LoRA 训练。
 
 默认策略：
 - 只训练 UNet LoRA；
-- 样本以术前视角为锚点，目标是同视角术后图；
-- 同时使用头部参考图、鼻嘴联合 crop 图和单边样本自重建图；
+- 先用术后图做简单 baseline：术后 face crop 内遮住鼻嘴再重建术后图；
+- 术前图和跨视角参考先保留为未来工作；
 - 不训练 ControlNet。
 """
 
 from __future__ import annotations
 
-from collections import defaultdict
 from dataclasses import dataclass
 import json
 import math
@@ -20,10 +19,10 @@ from typing import Any
 
 import cv2
 import numpy as np
-from PIL import Image, ImageOps
+from PIL import Image
 
 from project_utils.io import write_json
-from .index import build_generation_manifest, part_mask_path
+from .index import build_generation_manifest
 from .settings import (
     GenerationPaths,
     LoRATrainConfig,
@@ -32,17 +31,6 @@ from .settings import (
     default_lora_train_config,
     dump_config_snapshot,
 )
-
-
-def _resolve_rel_path(paths: GenerationPaths, sample_path: str | Path) -> Path:
-    """把样本路径归一回原始输入树下的相对路径。"""
-    path = Path(sample_path)
-    for root in (paths.sanitized_root, paths.input_root, paths.depth_root, paths.inpaint_mask_root):
-        try:
-            return path.relative_to(root)
-        except ValueError:
-            continue
-    raise ValueError(f"无法解析相对路径: {path}")
 
 
 def _row_image_path(row: dict[str, Any]) -> str:
@@ -69,41 +57,19 @@ def _load_mask_bbox(path: Path) -> tuple[int, int, int, int] | None:
     return int(xs.min()), int(ys.min()), int(xs.max()) + 1, int(ys.max()) + 1
 
 
-def _expand_box(
-    box: tuple[int, int, int, int] | None,
-    width: int,
-    height: int,
-    context_ratio: float,
-) -> tuple[int, int, int, int] | None:
-    """给局部框加上下文边距，避免 crop 过紧。"""
-    if box is None:
-        return None
-    x1, y1, x2, y2 = box
-    bw = max(1, x2 - x1)
-    bh = max(1, y2 - y1)
-    pad = int(round(max(bw, bh) * max(0.0, context_ratio)))
-    x1 = max(0, x1 - pad)
-    y1 = max(0, y1 - pad)
-    x2 = min(width, x2 + pad)
-    y2 = min(height, y2 + pad)
-    if x2 <= x1 or y2 <= y1:
-        return None
-    return x1, y1, x2, y2
-
-
 def _image_to_tensor(image: Image.Image, resolution: int):
     import torch
 
-    square = ImageOps.pad(image.convert("RGB"), (resolution, resolution), method=Image.Resampling.BICUBIC)
-    arr = np.asarray(square).astype(np.float32) / 127.5 - 1.0
+    resized = image.convert("RGB").resize((resolution, resolution), Image.Resampling.BICUBIC)
+    arr = np.asarray(resized).astype(np.float32) / 127.5 - 1.0
     return torch.from_numpy(arr).permute(2, 0, 1).contiguous()
 
 
 def _mask_to_tensor(mask: Image.Image, resolution: int):
     import torch
 
-    square = ImageOps.pad(mask.convert("L"), (resolution, resolution), method=Image.Resampling.NEAREST)
-    arr = np.asarray(square).astype(np.float32) / 255.0
+    resized = mask.convert("L").resize((resolution, resolution), Image.Resampling.NEAREST)
+    arr = np.asarray(resized).astype(np.float32) / 255.0
     arr = (arr > 0.5).astype(np.float32)
     return torch.from_numpy(arr[None, ...]).contiguous()
 
@@ -122,7 +88,7 @@ class _TrainSample:
 
 
 class _SdxlLoRADataset:
-    """训练数据集：同一 manifest 会扩展出头部参考样本和局部 inpaint 样本。"""
+    """训练数据集：用统一 face crop 坐标系做鼻嘴 inpaint。"""
 
     def __init__(self, samples: list[_TrainSample], resolution: int):
         self.samples = samples
@@ -143,8 +109,7 @@ class _SdxlLoRADataset:
         condition_tensor = _image_to_tensor(condition_image, self.resolution)
         target_tensor = _image_to_tensor(target_image, self.resolution)
         mask_tensor = _mask_to_tensor(mask, self.resolution)
-        # paired 训练时，target_tensor 是术后目标图；
-        # masked_tensor 始终来自条件图，并把编辑区域按 inpaint mask 挖空。
+        # Inpainting 条件图来自术后 face crop，并把鼻嘴区域按 mask 挖空。
         masked_tensor = condition_tensor * (mask_tensor < 0.5)
         return {
             "pixel_values": target_tensor,
@@ -178,14 +143,14 @@ def _build_training_samples(
     """
     从 manifest 构造训练样本。
 
-    当前固定三类样本：
-    - paired_head_reference：同视角术前 -> 术后，学习头部整体稳定性
-    - paired_edit_crop：同视角术前 -> 术后，学习鼻嘴目标重绘区域
-    - self_identity_head：单边缺视角时的自重建样本，避免浪费小样本
+    当前 baseline 只用术后样本：
+    - post_face_inpaint：术后 face crop 内遮住鼻嘴，目标仍是同一张术后 face crop。
     """
     samples: list[_TrainSample] = []
     for row in manifest_rows:
         if row.get("split") != "train":
+            continue
+        if str(row.get("stage") or "") != "术后":
             continue
         case_id = str(row.get("case_id") or "").strip()
         view_id = str(row.get("view_id") or "").strip()
@@ -207,62 +172,6 @@ def _build_training_samples(
         if face_box is None:
             continue
 
-        rel_path = _resolve_rel_path(paths, image_path)
-        nose_box = _load_mask_bbox(Path(str(row.get("nose_mask_path") or "")))
-        mouth_box = _load_mask_bbox(part_mask_path(paths, "mouth", rel_path))
-        image = Image.open(image_path).convert("RGB")
-        width, height = image.size
-        is_paired_view = bool(row.get("is_paired_view"))
-        stage = str(row.get("stage") or "")
-        paired_post_path = str(row.get("paired_post_path") or "").strip()
-
-        if stage == "术前" and is_paired_view and paired_post_path:
-            samples.append(
-                _TrainSample(
-                    case_id=case_id,
-                    view_id=view_id,
-                    condition_image_path=image_path,
-                    target_image_path=paired_post_path,
-                    inpaint_mask_path=inpaint_mask_path,
-                    prompt=prompt,
-                    sample_type="paired_head_reference",
-                    weight=config.paired_head_weight,
-                    crop_box=face_box,
-                )
-            )
-
-            boxes = [box for box in (nose_box, mouth_box) if box is not None]
-            if boxes:
-                x1 = min(box[0] for box in boxes)
-                y1 = min(box[1] for box in boxes)
-                x2 = max(box[2] for box in boxes)
-                y2 = max(box[3] for box in boxes)
-                # 鼻子和嘴巴共用一张连续 inpaint mask，并在局部 crop 中强化医生风格。
-                crop_box = _expand_box(
-                    (x1, y1, x2, y2),
-                    width=width,
-                    height=height,
-                    context_ratio=config.crop_context_ratio,
-                )
-                if crop_box is not None:
-                    samples.append(
-                        _TrainSample(
-                            case_id=case_id,
-                            view_id=view_id,
-                            condition_image_path=image_path,
-                            target_image_path=paired_post_path,
-                            inpaint_mask_path=inpaint_mask_path,
-                            prompt=prompt,
-                            sample_type="paired_edit_crop",
-                            weight=config.paired_edit_weight,
-                            crop_box=crop_box,
-                        )
-                    )
-            continue
-
-        if not config.allow_unpaired_self_reconstruction or is_paired_view:
-            continue
-
         samples.append(
             _TrainSample(
                 case_id=case_id,
@@ -271,8 +180,8 @@ def _build_training_samples(
                 target_image_path=image_path,
                 inpaint_mask_path=inpaint_mask_path,
                 prompt=prompt,
-                sample_type="self_identity_head",
-                weight=config.self_identity_weight,
+                sample_type="post_face_inpaint",
+                weight=1.0,
                 crop_box=face_box,
             )
         )
@@ -288,53 +197,23 @@ def _order_train_samples_for_cases(
         return samples
 
     rng = random.Random(config.seed)
-    paired_views_by_case: dict[str, dict[str, dict[str, _TrainSample]]] = defaultdict(dict)
-    self_samples_by_case: dict[str, list[_TrainSample]] = defaultdict(list)
-    case_ids: set[str] = set()
-
+    samples_by_case: dict[str, list[_TrainSample]] = {}
     for sample in samples:
-        case_ids.add(sample.case_id)
-        if sample.sample_type == "self_identity_head":
-            self_samples_by_case[sample.case_id].append(sample)
-            continue
-        paired_views_by_case[sample.case_id].setdefault(sample.view_id, {})[sample.sample_type] = sample
-
-    for case_id in self_samples_by_case:
-        self_samples_by_case[case_id].sort(key=lambda item: _view_sort_key(item.view_id))
-
-    paired_view_queue: dict[str, list[str]] = {}
-    for case_id, view_map in paired_views_by_case.items():
-        view_ids = sorted(view_map, key=_view_sort_key)
-        rng.shuffle(view_ids)
-        paired_view_queue[case_id] = view_ids
+        samples_by_case.setdefault(sample.case_id, []).append(sample)
+    for case_samples in samples_by_case.values():
+        case_samples.sort(key=lambda item: _view_sort_key(item.view_id))
 
     ordered: list[_TrainSample] = []
     while True:
-        active_cases = [
-            case_id
-            for case_id in case_ids
-            if paired_view_queue.get(case_id) or self_samples_by_case.get(case_id)
-        ]
+        active_cases = [case_id for case_id, case_samples in samples_by_case.items() if case_samples]
         if not active_cases:
             break
         rng.shuffle(active_cases)
         for case_id in active_cases:
-            selected_views = 0
-            # v1 不额外引入同病例联合损失，先通过顺序采样让一次梯度累积尽量看到
-            # 同一个人的多个视角，减少完整六视角病例被“按图片数放大”的问题。
-            while selected_views < max(1, config.views_per_case_step) and paired_view_queue.get(case_id):
-                view_id = paired_view_queue[case_id].pop(0)
-                sample_map = paired_views_by_case[case_id].get(view_id, {})
-                head_sample = sample_map.get("paired_head_reference")
-                edit_sample = sample_map.get("paired_edit_crop")
-                if head_sample is not None:
-                    ordered.append(head_sample)
-                if edit_sample is not None:
-                    ordered.append(edit_sample)
-                selected_views += 1
-            while selected_views < max(1, config.views_per_case_step) and self_samples_by_case.get(case_id):
-                ordered.append(self_samples_by_case[case_id].pop(0))
-                selected_views += 1
+            for _ in range(max(1, config.views_per_case_step)):
+                if not samples_by_case.get(case_id):
+                    break
+                ordered.append(samples_by_case[case_id].pop(0))
     return ordered
 
 

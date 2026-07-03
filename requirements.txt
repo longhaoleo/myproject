@@ -1,30 +1,37 @@
 # 统一依赖（建议 Python 3.10）
 # 说明：
 # - 该文件目标是“一套环境可直接跑三个模式”；
-# - TensorFlow 采用 2.15.x，避免与 mediapipe 的 protobuf 约束冲突。
+# - 主线检测器保留 MTCNN / SCRFD / BlazeFace / YOLOv8-Face。
 
 # 基础
 numpy==1.26.4
 opencv-python==4.10.0.84
 mediapipe==0.10.14
 requests>=2.31,<3.0
-Pillow>=10.4,<12.0
+Pillow>=10.2,<10.3
 
-# MTCNN
+# Torch
 torch>=2.1,<2.11
 torchvision>=0.16,<0.21
-facenet-pytorch==2.6.0
+
+# 已从默认主环境移除：facenet-pytorch==2.6.0 会把 torch 锁到 <2.3，
+# 与生成侧量化依赖冲突。如需复测 MTCNN，建议另建 detection-only 环境。
+# facenet-pytorch==2.6.0
 
 # 多检测器
-retina-face==0.0.17
-tensorflow==2.15.1
 insightface==0.7.3
 onnxruntime==1.19.2
 ultralytics==8.3.0
 gdown>=5.2,<6.0
 
+# 已从默认主线移除：RetinaFace 依赖 TensorFlow 路线，环境复现成本较高。
+# 如需临时复测 RetinaFace，再手动安装：
+# retina-face==0.0.17
+# tensorflow==2.15.1
+
 # SAM（RUN_MODE=sam_mask）
 # 若 git 网络慢，可按 detection/README.md 用 zip 本地安装 MobileSAM。
+timm>=0.9,<1.1
 git+https://github.com/ChaoningZhang/MobileSAM.git
 
 # SDXL 生成侧（generation_pipeline.py）
