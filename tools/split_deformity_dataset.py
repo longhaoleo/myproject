@@ -1,34 +1,53 @@
 """
-Create case-level train/val/future-test splits for the deformity dataset.
+Build a unified train/test/feature-test dataset from masked deformity images and masks.
 
-The script only writes split manifests; it does not copy or move images.
-Default policy follows the existing data-cleaning report:
-- split by case_id, never by individual image;
-- complete paired six-view cases are eligible for train/val;
-- cases missing pre/post or standard views are reserved for future_test;
-- non-standard extra views are recorded, but excluded from the main manifest.
+Default output:
+  ~/deformity_dataset/
+    Train/
+      images/<case>/<stage>/<view>.<ext>
+      masks/inpaint_mask/<case>/<stage>/<view>.png
+      masks/feather_mask/<case>/<stage>/<view>.png
+      masks/parts/{face,nose,mouth}/<case>/<stage>/<view>.png
+    Test/
+    Feature_test/
+
+The split follows the before-dataset report. The script links files by default.
+Use --copy if you need physical copies.
 """
 
 from __future__ import annotations
 
 import argparse
-import csv
-import json
 from pathlib import Path
-import random
-from typing import Any
+import shutil
 
 
 IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".bmp", ".webp"}
 STAGES = ("术前", "术后")
 STANDARD_VIEWS = tuple(str(i) for i in range(1, 7))
+SPLIT_DIRS = {
+    "train": "Train",
+    "test": "Test",
+    "feature_test": "Feature_test",
+}
+MASK_GROUPS = (
+    ("inpaint_mask", ("inpaint_mask",)),
+    ("feather_mask", ("feather_mask",)),
+    ("parts/face", ("parts", "face")),
+    ("parts/nose", ("parts", "nose")),
+    ("parts/mouth", ("parts", "mouth")),
+)
+EXCLUDED_CASES = {"165"}
+MODEL_TEST_CASES = {"14", "16", "79", "148", "150", "161"}
+MISSING_VIEW_FEATURE_CASES = {"50", "97", "150", "184", "185"}
+EXTRA_VIEW_FEATURE_CASES = {"21", "35", "36", "43", "105", "161"}
 
 
-def _case_sort_key(case_id: str) -> tuple[int, int | str]:
-    return (0, int(case_id)) if case_id.isdigit() else (1, case_id.lower())
+def _sort_key(text: str) -> tuple[int, int | str]:
+    return (0, int(text)) if text.isdigit() else (1, text.lower())
 
 
-def _iter_image_files(root: Path) -> list[Path]:
+def _iter_images(root: Path) -> list[Path]:
     if not root.exists():
         return []
     return sorted(
@@ -37,246 +56,180 @@ def _iter_image_files(root: Path) -> list[Path]:
             for path in root.iterdir()
             if path.is_file() and path.suffix.lower() in IMAGE_EXTENSIONS
         ),
-        key=lambda path: _case_sort_key(path.stem),
+        key=lambda path: _sort_key(path.stem),
     )
 
 
-def _view_id(path: Path) -> str:
-    return path.stem
+def _stage_files(case_dir: Path, stage: str) -> dict[str, Path]:
+    files: dict[str, Path] = {}
+    for path in _iter_images(case_dir / stage):
+        files[path.stem] = path
+    return files
 
 
-def _stage_summary(case_dir: Path, stage: str) -> dict[str, Any]:
-    files = _iter_image_files(case_dir / stage)
-    standard_views = sorted(
-        {_view_id(path) for path in files if _view_id(path) in STANDARD_VIEWS},
-        key=lambda item: int(item),
-    )
-    extra_files = [path for path in files if _view_id(path) not in STANDARD_VIEWS]
-    missing_views = [view for view in STANDARD_VIEWS if view not in set(standard_views)]
-    return {
-        "files": files,
-        "standard_views": standard_views,
-        "missing_views": missing_views,
-        "extra_files": extra_files,
-    }
-
-
-def _analyze_cases(input_root: Path) -> list[dict[str, Any]]:
-    cases: list[dict[str, Any]] = []
-    for case_dir in sorted((p for p in input_root.iterdir() if p.is_dir()), key=lambda p: _case_sort_key(p.name)):
-        pre = _stage_summary(case_dir, "术前")
-        post = _stage_summary(case_dir, "术后")
-        reasons: list[str] = []
-        if not pre["files"]:
-            reasons.append("missing_pre")
-        if not post["files"]:
-            reasons.append("missing_post")
-        if pre["files"] and pre["missing_views"]:
-            reasons.append("missing_pre_views")
-        if post["files"] and post["missing_views"]:
-            reasons.append("missing_post_views")
-        if pre["extra_files"] or post["extra_files"]:
-            reasons.append("extra_nonstandard_views")
-
-        has_complete_pair = (
-            not pre["missing_views"]
-            and not post["missing_views"]
-            and bool(pre["files"])
-            and bool(post["files"])
-        )
+def _case_info(masked_root: Path) -> list[dict[str, object]]:
+    cases: list[dict[str, object]] = []
+    for case_dir in sorted((p for p in masked_root.iterdir() if p.is_dir()), key=lambda p: _sort_key(p.name)):
+        pre = _stage_files(case_dir, "术前")
+        post = _stage_files(case_dir, "术后")
+        all_views = set(pre) | set(post)
+        extra_views = sorted(all_views - set(STANDARD_VIEWS), key=_sort_key)
+        missing_pre = [view for view in STANDARD_VIEWS if view not in pre]
+        missing_post = [view for view in STANDARD_VIEWS if view not in post]
+        feature_test = bool(extra_views or missing_pre or missing_post)
         cases.append(
             {
                 "case_id": case_dir.name,
-                "case_dir": case_dir,
                 "pre": pre,
                 "post": post,
-                "has_complete_pair": has_complete_pair,
-                "reasons": reasons,
+                "extra_views": extra_views,
+                "missing_pre": missing_pre,
+                "missing_post": missing_post,
+                "feature_test": feature_test,
             }
         )
     return cases
 
 
-def _assign_splits(
-    cases: list[dict[str, Any]],
-    val_ratio: float,
-    seed: int,
-    include_missing_views_in_main: bool,
-) -> dict[str, str]:
-    eligible: list[str] = []
-    split_by_case: dict[str, str] = {}
-    for item in cases:
-        case_id = str(item["case_id"])
-        has_pre = bool(item["pre"]["files"])
-        has_post = bool(item["post"]["files"])
-        has_missing_views = bool(item["pre"]["missing_views"] or item["post"]["missing_views"])
-        is_main_eligible = has_pre and has_post and (include_missing_views_in_main or not has_missing_views)
-        if is_main_eligible:
-            eligible.append(case_id)
-        else:
-            split_by_case[case_id] = "future_test"
-
-    rng = random.Random(seed)
-    shuffled = list(eligible)
-    rng.shuffle(shuffled)
-    val_count = int(round(len(shuffled) * val_ratio))
-    if len(shuffled) > 1:
-        val_count = max(1, min(len(shuffled) - 1, val_count))
-    val_cases = set(shuffled[:val_count])
-    for case_id in eligible:
-        split_by_case[case_id] = "val" if case_id in val_cases else "train"
-    return split_by_case
+def _target_image_path(output_root: Path, split: str, rel_path: Path) -> Path:
+    return output_root / SPLIT_DIRS[split] / "images" / rel_path
 
 
-def _case_rows(cases: list[dict[str, Any]], split_by_case: dict[str, str]) -> list[dict[str, Any]]:
-    rows: list[dict[str, Any]] = []
-    for item in cases:
-        pre = item["pre"]
-        post = item["post"]
-        rows.append(
-            {
-                "case_id": item["case_id"],
-                "split": split_by_case[item["case_id"]],
-                "has_complete_pair": item["has_complete_pair"],
-                "reasons": ";".join(item["reasons"]),
-                "pre_image_count": len(pre["files"]),
-                "post_image_count": len(post["files"]),
-                "pre_standard_views": ",".join(pre["standard_views"]),
-                "post_standard_views": ",".join(post["standard_views"]),
-                "missing_pre_views": ",".join(pre["missing_views"]),
-                "missing_post_views": ",".join(post["missing_views"]),
-                "extra_pre_count": len(pre["extra_files"]),
-                "extra_post_count": len(post["extra_files"]),
-            }
-        )
-    return rows
+def _target_mask_path(output_root: Path, split: str, mask_group: str, rel_png: Path) -> Path:
+    return output_root / SPLIT_DIRS[split] / "masks" / mask_group / rel_png
 
 
-def _image_rows(cases: list[dict[str, Any]], input_root: Path, split_by_case: dict[str, str]) -> list[dict[str, Any]]:
-    rows: list[dict[str, Any]] = []
-    for item in cases:
-        case_id = str(item["case_id"])
-        split = split_by_case[case_id]
-        for stage in STAGES:
-            for path in item["pre" if stage == "术前" else "post"]["files"]:
-                view_id = _view_id(path)
-                is_standard_view = view_id in STANDARD_VIEWS
-                include_in_main = is_standard_view and split in {"train", "val"}
-                rows.append(
-                    {
-                        "case_id": case_id,
-                        "split": split,
-                        "stage": stage,
-                        "view_id": view_id,
-                        "is_standard_view": is_standard_view,
-                        "include_in_main": include_in_main,
-                        "rel_path": str(path.relative_to(input_root)),
-                        "path": str(path),
-                    }
-                )
-    return rows
+def _replace_file(src: Path, dst: Path, copy: bool) -> None:
+    dst.parent.mkdir(parents=True, exist_ok=True)
+    if dst.exists() or dst.is_symlink():
+        dst.unlink()
+    if copy:
+        shutil.copy2(src, dst)
+    else:
+        dst.symlink_to(src)
 
 
-def _write_csv(path: Path, rows: list[dict[str, Any]]) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    if not rows:
-        path.write_text("", encoding="utf-8")
-        return
-    with path.open("w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
-        writer.writeheader()
-        writer.writerows(rows)
+def _clear_split_dirs(output_root: Path) -> None:
+    for dirname in SPLIT_DIRS.values():
+        path = output_root / dirname
+        if path.exists():
+            shutil.rmtree(path)
 
 
-def _write_jsonl(path: Path, rows: list[dict[str, Any]]) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("w", encoding="utf-8") as f:
-        for row in rows:
-            f.write(json.dumps(row, ensure_ascii=False) + "\n")
+def _mask_path(mask_root: Path, rel_path: Path, parts: tuple[str, ...]) -> Path:
+    return (mask_root.joinpath(*parts) / rel_path).with_suffix(".png")
 
 
-def _write_case_list(path: Path, rows: list[dict[str, Any]], split: str) -> None:
-    case_ids = [str(row["case_id"]) for row in rows if row["split"] == split]
-    path.write_text("\n".join(case_ids) + ("\n" if case_ids else ""), encoding="utf-8")
-
-
-def build_splits(
-    input_root: Path,
+def _link_sample(
+    image_path: Path,
+    masked_root: Path,
+    mask_root: Path,
     output_root: Path,
-    val_ratio: float,
-    seed: int,
-    include_missing_views_in_main: bool,
-) -> dict[str, Any]:
-    input_root = input_root.expanduser().resolve()
+    split: str,
+    copy: bool,
+) -> bool:
+    rel_path = image_path.relative_to(masked_root)
+    rel_png = rel_path.with_suffix(".png")
+    mask_paths = [
+        (mask_group, _mask_path(mask_root, rel_path, parts))
+        for mask_group, parts in MASK_GROUPS
+    ]
+    if any(not path.exists() for _, path in mask_paths):
+        return False
+
+    _replace_file(image_path, _target_image_path(output_root, split, rel_path), copy=copy)
+    for mask_group, src in mask_paths:
+        _replace_file(src, _target_mask_path(output_root, split, mask_group, rel_png), copy=copy)
+    return True
+
+
+def build_dataset(
+    masked_root: Path,
+    mask_root: Path,
+    output_root: Path,
+    copy: bool,
+) -> dict[str, dict[str, int]]:
+    masked_root = masked_root.expanduser().resolve()
+    mask_root = mask_root.expanduser().resolve()
     output_root = output_root.expanduser().resolve()
-    cases = _analyze_cases(input_root)
-    split_by_case = _assign_splits(
-        cases=cases,
-        val_ratio=val_ratio,
-        seed=seed,
-        include_missing_views_in_main=include_missing_views_in_main,
-    )
-    case_rows = _case_rows(cases, split_by_case)
-    image_rows = _image_rows(cases, input_root, split_by_case)
+    cases = _case_info(masked_root)
 
-    output_root.mkdir(parents=True, exist_ok=True)
-    _write_csv(output_root / "cases.csv", case_rows)
-    _write_jsonl(output_root / "images.jsonl", image_rows)
-    for split in ("train", "val", "future_test"):
-        _write_case_list(output_root / f"{split}_cases.txt", case_rows, split)
-
-    split_counts: dict[str, int] = {}
-    image_counts: dict[str, int] = {}
-    for row in case_rows:
-        split_counts[row["split"]] = split_counts.get(row["split"], 0) + 1
-    for row in image_rows:
-        image_counts[row["split"]] = image_counts.get(row["split"], 0) + 1
-
-    summary = {
-        "input_root": str(input_root),
-        "output_root": str(output_root),
-        "case_count": len(case_rows),
-        "image_count": len(image_rows),
-        "split_case_counts": split_counts,
-        "split_image_counts": image_counts,
-        "val_ratio": val_ratio,
-        "seed": seed,
-        "include_missing_views_in_main": include_missing_views_in_main,
-        "policy": {
-            "unit": "case_id",
-            "train_val_source": "cases with both pre and post; standard views complete unless include_missing_views_in_main is set",
-            "future_test_source": "cases missing pre/post or reserved missing standard views",
-            "extra_views": "recorded in images.jsonl but excluded from main train/val rows",
-        },
+    _clear_split_dirs(output_root)
+    counts = {
+        "Train": {"cases": 0, "samples": 0, "skipped_missing_masks": 0},
+        "Test": {"cases": 0, "samples": 0, "skipped_missing_masks": 0},
+        "Feature_test": {"cases": 0, "samples": 0, "skipped_missing_masks": 0},
     }
-    (output_root / "summary.json").write_text(
-        json.dumps(summary, ensure_ascii=False, indent=2),
-        encoding="utf-8",
-    )
-    return summary
+    touched_cases = {split_dir: set() for split_dir in counts}
+
+    for case in cases:
+        case_id = str(case["case_id"])
+        if case_id in EXCLUDED_CASES:
+            continue
+
+        split_views: dict[str, set[str]] = {}
+        if case_id in MODEL_TEST_CASES:
+            split_views["test"] = set(STANDARD_VIEWS)
+        elif case_id not in MISSING_VIEW_FEATURE_CASES:
+            split_views["train"] = set(STANDARD_VIEWS)
+
+        if case_id in MISSING_VIEW_FEATURE_CASES:
+            split_views.setdefault("feature_test", set()).update(STANDARD_VIEWS)
+        if case_id in EXTRA_VIEW_FEATURE_CASES:
+            extra_views = case["extra_views"]
+            assert isinstance(extra_views, list)
+            split_views.setdefault("feature_test", set()).update(str(view) for view in extra_views)
+
+        for split, views in split_views.items():
+            split_dir = SPLIT_DIRS[split]
+            case_has_sample = False
+            for stage, files in (("术前", case["pre"]), ("术后", case["post"])):
+                stage_files = files
+                assert isinstance(stage_files, dict)
+                for view_id in sorted(views, key=_sort_key):
+                    image_path = stage_files.get(view_id)
+                    if image_path is None:
+                        continue
+                    if _link_sample(
+                        image_path=image_path,
+                        masked_root=masked_root,
+                        mask_root=mask_root,
+                        output_root=output_root,
+                        split=split,
+                        copy=copy,
+                    ):
+                        counts[split_dir]["samples"] += 1
+                        case_has_sample = True
+                    else:
+                        counts[split_dir]["skipped_missing_masks"] += 1
+            if case_has_sample:
+                touched_cases[split_dir].add(case_id)
+
+    for split_dir, case_ids in touched_cases.items():
+        counts[split_dir]["cases"] = len(case_ids)
+    return counts
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Split deformity cases into train/val/future_test.")
-    parser.add_argument("--input-root", type=Path, default=Path("~/deformity"))
-    parser.add_argument("--output-root", type=Path, default=Path("~/deformity_splits"))
-    parser.add_argument("--val-ratio", type=float, default=0.1)
-    parser.add_argument("--seed", type=int, default=42)
-    parser.add_argument(
-        "--include-missing-views-in-main",
-        action="store_true",
-        help="Keep paired cases with missing standard views in train/val instead of future_test.",
-    )
+    parser = argparse.ArgumentParser(description="Build unified Train/Test/Feature_test deformity dataset.")
+    parser.add_argument("--masked-root", type=Path, default=Path("~/deformity_masked"))
+    parser.add_argument("--mask-root", type=Path, default=Path("~/deformity_sam_mask"))
+    parser.add_argument("--output-root", type=Path, default=Path("~/deformity_dataset"))
+    parser.add_argument("--copy", action="store_true", help="Copy files instead of creating symlinks.")
     args = parser.parse_args()
 
-    summary = build_splits(
-        input_root=args.input_root,
+    counts = build_dataset(
+        masked_root=args.masked_root,
+        mask_root=args.mask_root,
         output_root=args.output_root,
-        val_ratio=args.val_ratio,
-        seed=args.seed,
-        include_missing_views_in_main=args.include_missing_views_in_main,
+        copy=args.copy,
     )
-    print(json.dumps(summary, ensure_ascii=False, indent=2))
+    for split_name, item in counts.items():
+        print(
+            f"{split_name}: cases={item['cases']} "
+            f"samples={item['samples']} "
+            f"skipped_missing_masks={item['skipped_missing_masks']}"
+        )
 
 
 if __name__ == "__main__":

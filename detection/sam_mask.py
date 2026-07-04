@@ -39,17 +39,10 @@ from .settings import (
     get_view_offset_map,
     resolve_part_offset,
 )
+from .reports import make_failure_row, write_run_report
 from .types import FaceDetection
 from .visualize import draw_face_detections
 from project_utils.dataset import iter_images, pick_random_groups, sort_key
-
-
-def _write_lines(file_path: Path, lines: list[str]) -> None:
-    """把文本行写入文件（用于统计落盘）。"""
-    file_path.parent.mkdir(parents=True, exist_ok=True)
-    with file_path.open("w", encoding="utf-8") as f:
-        for line in lines:
-            f.write(line + "\n")
 
 
 def _bool_mask_to_u8(mask: np.ndarray) -> np.ndarray:
@@ -288,6 +281,7 @@ def main():
     seg_failed_count = 0
     cache_hit_count = 0
     cache_miss_count = 0
+    failure_rows: list[dict[str, str]] = []
 
     start = time.perf_counter()
     try:
@@ -296,6 +290,14 @@ def main():
             image = cv2.imread(str(image_path))
             if image is None:
                 read_failed_count += 1
+                failure_rows.append(
+                    make_failure_row(
+                        image_path=image_path,
+                        input_root=input_root,
+                        status="read_failed",
+                        reason="读取失败",
+                    )
+                )
                 print(f"[sam-mask] 跳过(读取失败): {image_path}")
                 continue
 
@@ -326,9 +328,26 @@ def main():
                                 )
                         except Exception as exc:
                             infer_failed_count += 1
+                            failure_rows.append(
+                                make_failure_row(
+                                    image_path=image_path,
+                                    input_root=input_root,
+                                    status="infer_failed",
+                                    reason="检测失败",
+                                    detail=str(exc),
+                                )
+                            )
                             print(f"[sam-mask] 跳过(检测失败): {image_path} | {exc}")
                             continue
                     else:
+                        failure_rows.append(
+                            make_failure_row(
+                                image_path=image_path,
+                                input_root=input_root,
+                                status="cache_missing",
+                                reason="缓存缺失",
+                            )
+                        )
                         print(f"[sam-mask] 跳过(缓存缺失): {image_path}")
                         continue
             else:
@@ -343,11 +362,28 @@ def main():
                         )
                 except Exception as exc:
                     infer_failed_count += 1
+                    failure_rows.append(
+                        make_failure_row(
+                            image_path=image_path,
+                            input_root=input_root,
+                            status="infer_failed",
+                            reason="检测失败",
+                            detail=str(exc),
+                        )
+                    )
                     print(f"[sam-mask] 跳过(检测失败): {image_path} | {exc}")
                     continue
 
             if not detections:
                 no_face_count += 1
+                failure_rows.append(
+                    make_failure_row(
+                        image_path=image_path,
+                        input_root=input_root,
+                        status="no_face",
+                        reason="未检测到人脸",
+                    )
+                )
                 print(f"[sam-mask] 未检测到人脸: {image_path}")
 
                 preview = draw_face_detections(
@@ -390,6 +426,15 @@ def main():
                 merged_masks = segmenter.segment(image=image, detections=detections)
             except Exception as exc:
                 seg_failed_count += 1
+                failure_rows.append(
+                    make_failure_row(
+                        image_path=image_path,
+                        input_root=input_root,
+                        status="seg_failed",
+                        reason="分割失败",
+                        detail=str(exc),
+                    )
+                )
                 print(f"[sam-mask] 跳过(分割失败): {image_path} | {exc}")
                 continue
 
@@ -489,21 +534,26 @@ def main():
     print(f"缓存缺失: {cache_miss_count}")
     print(f"总耗时: {elapsed:.2f}s")
 
-    _write_lines(
-        output_root / "_run_stats" / "sam_mask_summary.txt",
-        [
-            f"ok_count={ok_count}",
-            f"no_face_count={no_face_count}",
-            f"read_failed_count={read_failed_count}",
-            f"infer_failed_count={infer_failed_count}",
-            f"seg_failed_count={seg_failed_count}",
-            f"cache_hit_count={cache_hit_count}",
-            f"cache_miss_count={cache_miss_count}",
-            f"elapsed_seconds={elapsed:.6f}",
-            f"detector={detector_name}",
-            f"segmenter={segmenter_name}",
-            f"prompt_source={prompt_source}",
-        ],
+    write_run_report(
+        run_stats_root=output_root / "_run_stats",
+        report_name="sam_mask",
+        summary={
+            "input_root": input_root,
+            "output_root": output_root,
+            "total_images": len(image_paths),
+            "ok_count": ok_count,
+            "no_face_count": no_face_count,
+            "read_failed_count": read_failed_count,
+            "infer_failed_count": infer_failed_count,
+            "seg_failed_count": seg_failed_count,
+            "cache_hit_count": cache_hit_count,
+            "cache_miss_count": cache_miss_count,
+            "elapsed_seconds": f"{elapsed:.6f}",
+            "detector": detector_name,
+            "segmenter": segmenter_name,
+            "prompt_source": prompt_source,
+        },
+        failures=failure_rows,
     )
 
 

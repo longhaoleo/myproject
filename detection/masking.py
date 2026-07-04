@@ -15,6 +15,7 @@ import cv2
 from .factory import create_face_detector
 from .mask_apply import draw_black_eye_masks
 from .part_boxes import build_part_prompt_boxes
+from .reports import make_failure_row, write_run_report
 from .settings import (
     default_detector_options,
     default_min_confidence_map,
@@ -37,14 +38,6 @@ SKIP_REASON = {
     "no_face": "未检测到人脸",
     "no_eye": "未定位到眼睛",
 }
-
-
-def _write_lines(file_path: Path, lines: list[str]) -> None:
-    """把文本行写入文件（用于统计落盘）。"""
-    file_path.parent.mkdir(parents=True, exist_ok=True)
-    with file_path.open("w", encoding="utf-8") as f:
-        for line in lines:
-            f.write(line + "\n")
 
 
 def format_boxes(boxes: list[tuple[int, int, int, int]]) -> str:
@@ -228,6 +221,7 @@ def main():
     read_failed_count = 0
     no_face_count = 0
     no_eye_count = 0
+    failure_rows: list[dict[str, str]] = []
     try:
         for image_path in image_paths:
             output_path = None
@@ -259,6 +253,15 @@ def main():
                     no_face_count += 1
                 elif status == "no_eye":
                     no_eye_count += 1
+                failure_rows.append(
+                    make_failure_row(
+                        image_path=image_path,
+                        input_root=input_root,
+                        status=status,
+                        reason=SKIP_REASON.get(status, status),
+                        output_path=output_path,
+                    )
+                )
                 print(f"已跳过({SKIP_REASON.get(status, status)}): {image_path}")
     finally:
         for detector in detectors:
@@ -273,19 +276,24 @@ def main():
     print(f"读取失败: {read_failed_count}")
     print(f"总耗时: {elapsed:.2f}s")
 
-    _write_lines(
-        output_root / "_run_stats" / "eye_mask_summary.txt",
-        [
-            f"ok_count={ok_count}",
-            f"skip_count={skip_count}",
-            f"no_face_count={no_face_count}",
-            f"no_eye_count={no_eye_count}",
-            f"read_failed_count={read_failed_count}",
-            f"elapsed_seconds={elapsed:.6f}",
-            f"primary_detector={detector_name}",
-            f"fallback_detectors={','.join(fallback_detectors)}",
-            f"tweak_method_name={tweak_method_name}",
-        ],
+    write_run_report(
+        run_stats_root=output_root / "_run_stats",
+        report_name="eye_mask",
+        summary={
+            "input_root": input_root,
+            "output_root": output_root,
+            "total_images": len(image_paths),
+            "ok_count": ok_count,
+            "skip_count": skip_count,
+            "no_face_count": no_face_count,
+            "no_eye_count": no_eye_count,
+            "read_failed_count": read_failed_count,
+            "elapsed_seconds": f"{elapsed:.6f}",
+            "primary_detector": detector_name,
+            "fallback_detectors": ",".join(fallback_detectors),
+            "tweak_method_name": tweak_method_name,
+        },
+        failures=failure_rows,
     )
 if __name__ == "__main__":
     main()

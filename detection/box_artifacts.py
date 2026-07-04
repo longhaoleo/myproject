@@ -26,6 +26,7 @@ from .artifacts import (
 )
 from .factory import create_face_detector
 from .part_boxes import PART_NAMES, build_part_prompt_boxes
+from .reports import make_failure_row, write_run_report
 from .settings import (
     default_detector_options,
     default_min_confidence_map,
@@ -35,11 +36,6 @@ from .settings import (
     default_paths,
 )
 from project_utils.dataset import iter_images, sort_key
-
-
-def _write_lines(file_path: Path, lines: list[str]) -> None:
-    file_path.parent.mkdir(parents=True, exist_ok=True)
-    file_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
 def _make_part_masks_from_boxes(
@@ -163,6 +159,7 @@ def main() -> None:
     no_part_count = 0
     read_failed_count = 0
     infer_failed_count = 0
+    failure_rows: list[dict[str, str]] = []
     start = time.perf_counter()
     try:
         for image_path in image_paths:
@@ -170,6 +167,14 @@ def main() -> None:
             image = cv2.imread(str(image_path))
             if image is None:
                 read_failed_count += 1
+                failure_rows.append(
+                    make_failure_row(
+                        image_path=image_path,
+                        input_root=input_root,
+                        status="read_failed",
+                        reason="读取失败",
+                    )
+                )
                 print(f"[box-artifacts] 跳过(读取失败): {image_path}")
                 continue
 
@@ -183,6 +188,14 @@ def main() -> None:
                     break
             if not detections:
                 no_face_count += 1
+                failure_rows.append(
+                    make_failure_row(
+                        image_path=image_path,
+                        input_root=input_root,
+                        status="no_face",
+                        reason="未检测到人脸",
+                    )
+                )
                 print(f"[box-artifacts] 跳过(未检测到人脸): {image_path}")
                 continue
 
@@ -199,10 +212,29 @@ def main() -> None:
                 )
             except Exception as exc:
                 infer_failed_count += 1
+                failure_rows.append(
+                    make_failure_row(
+                        image_path=image_path,
+                        input_root=input_root,
+                        status="infer_failed",
+                        reason="部位框失败",
+                        detail=str(exc),
+                    )
+                )
                 print(f"[box-artifacts] 跳过(部位框失败): {image_path} | {exc}")
                 continue
             if not {"face", "nose", "mouth"}.issubset(part_masks):
                 no_part_count += 1
+                missing_parts = sorted({"face", "nose", "mouth"} - set(part_masks))
+                failure_rows.append(
+                    make_failure_row(
+                        image_path=image_path,
+                        input_root=input_root,
+                        status="no_part",
+                        reason="缺少 face/nose/mouth",
+                        detail="missing_parts=" + ",".join(missing_parts),
+                    )
+                )
                 print(f"[box-artifacts] 跳过(缺少 face/nose/mouth): {image_path}")
                 continue
 
@@ -228,19 +260,24 @@ def main() -> None:
     print(f"部位框失败: {infer_failed_count}")
     print(f"总耗时: {elapsed:.2f}s")
 
-    _write_lines(
-        output_root / "_run_stats" / "box_artifacts_summary.txt",
-        [
-            f"ok_count={ok_count}",
-            f"no_face_count={no_face_count}",
-            f"no_part_count={no_part_count}",
-            f"read_failed_count={read_failed_count}",
-            f"infer_failed_count={infer_failed_count}",
-            f"elapsed_seconds={elapsed:.6f}",
-            f"primary_detector={detector_name}",
-            f"fallback_detectors={','.join(fallback_detectors)}",
-            f"tweak_method_name={tweak_method_name}",
-        ],
+    write_run_report(
+        run_stats_root=output_root / "_run_stats",
+        report_name="box_artifacts",
+        summary={
+            "input_root": input_root,
+            "output_root": output_root,
+            "total_images": len(image_paths),
+            "ok_count": ok_count,
+            "no_face_count": no_face_count,
+            "no_part_count": no_part_count,
+            "read_failed_count": read_failed_count,
+            "infer_failed_count": infer_failed_count,
+            "elapsed_seconds": f"{elapsed:.6f}",
+            "primary_detector": detector_name,
+            "fallback_detectors": ",".join(fallback_detectors),
+            "tweak_method_name": tweak_method_name,
+        },
+        failures=failure_rows,
     )
 
 
