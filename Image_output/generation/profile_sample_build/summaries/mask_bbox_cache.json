@@ -1,0 +1,5399 @@
+{
+  "version": 1,
+  "items": {
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/1/术前/1.png": [
+      412,
+      853,
+      1514,
+      1955
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/1/术前/2.png": [
+      440,
+      631,
+      1574,
+      1765
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/1/术前/3.png": [
+      291,
+      836,
+      1390,
+      1935
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/1/术前/4.png": [
+      190,
+      831,
+      1358,
+      1999
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/1/术前/5.png": [
+      298,
+      813,
+      1434,
+      1949
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/1/术前/6.png": [
+      384,
+      926,
+      1316,
+      1858
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/10/术前/1.png": [
+      818,
+      355,
+      2179,
+      1716
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/10/术前/2.png": [
+      1018,
+      423,
+      2241,
+      1646
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/10/术前/3.png": [
+      550,
+      358,
+      1933,
+      1741
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/10/术前/4.png": [
+      977,
+      390,
+      2302,
+      1715
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/10/术前/5.png": [
+      726,
+      453,
+      1994,
+      1721
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/10/术前/6.png": [
+      1007,
+      624,
+      2030,
+      1647
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/100/术前/1.png": [
+      882,
+      424,
+      2150,
+      1692
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/100/术前/2.png": [
+      993,
+      385,
+      2295,
+      1687
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/100/术前/3.png": [
+      750,
+      432,
+      1924,
+      1606
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/100/术前/4.png": [
+      968,
+      419,
+      2244,
+      1695
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/100/术前/5.png": [
+      632,
+      442,
+      2047,
+      1857
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/100/术前/6.png": [
+      963,
+      652,
+      2035,
+      1724
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/101/术前/1.png": [
+      745,
+      157,
+      2267,
+      1679
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/101/术前/2.png": [
+      924,
+      349,
+      2464,
+      1889
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/101/术前/3.png": [
+      568,
+      359,
+      1984,
+      1775
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/101/术前/4.png": [
+      916,
+      394,
+      2333,
+      1811
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/101/术前/5.png": [
+      566,
+      429,
+      2104,
+      1967
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/101/术前/6.png": [
+      924,
+      546,
+      2038,
+      1660
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/102/术前/1.png": [
+      783,
+      418,
+      2126,
+      1761
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/102/术前/2.png": [
+      922,
+      428,
+      2265,
+      1771
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/102/术前/3.png": [
+      888,
+      385,
+      2218,
+      1715
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/102/术前/4.png": [
+      965,
+      487,
+      2282,
+      1804
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/102/术前/5.png": [
+      852,
+      578,
+      2088,
+      1814
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/102/术前/6.png": [
+      1058,
+      712,
+      2048,
+      1702
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/103/术前/1.png": [
+      904,
+      483,
+      2120,
+      1699
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/103/术前/2.png": [
+      992,
+      372,
+      2344,
+      1724
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/103/术前/3.png": [
+      524,
+      308,
+      2081,
+      1865
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/103/术前/4.png": [
+      1044,
+      469,
+      2431,
+      1856
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/103/术前/5.png": [
+      586,
+      379,
+      2027,
+      1820
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/103/术前/6.png": [
+      1055,
+      662,
+      1932,
+      1539
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/105/术前/1.png": [
+      803,
+      383,
+      2140,
+      1720
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/105/术前/2.png": [
+      935,
+      357,
+      2276,
+      1698
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/105/术前/3.png": [
+      647,
+      361,
+      1985,
+      1699
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/105/术前/4.png": [
+      897,
+      352,
+      2264,
+      1719
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/105/术前/5.png": [
+      728,
+      400,
+      2060,
+      1732
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/105/术前/6.png": [
+      992,
+      598,
+      1955,
+      1561
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/106/术前/1.png": [
+      938,
+      650,
+      2051,
+      1763
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/106/术前/2.png": [
+      855,
+      565,
+      2069,
+      1779
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/106/术前/3.png": [
+      1012,
+      783,
+      2029,
+      1800
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/106/术前/4.png": [
+      738,
+      570,
+      1922,
+      1754
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/106/术前/5.png": [
+      988,
+      681,
+      2138,
+      1831
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/106/术前/6.png": [
+      972,
+      658,
+      1995,
+      1681
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/107/术前/1.png": [
+      780,
+      335,
+      2279,
+      1834
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/107/术前/2.png": [
+      950,
+      225,
+      2581,
+      1856
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/107/术前/3.png": [
+      631,
+      414,
+      2025,
+      1808
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/107/术前/4.png": [
+      950,
+      272,
+      2533,
+      1855
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/107/术前/5.png": [
+      638,
+      416,
+      2033,
+      1811
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/107/术前/6.png": [
+      1027,
+      690,
+      1947,
+      1610
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/108/术前/1.png": [
+      868,
+      474,
+      2106,
+      1712
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/108/术前/2.png": [
+      1120,
+      571,
+      2171,
+      1622
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/108/术前/3.png": [
+      781,
+      524,
+      1874,
+      1617
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/108/术前/4.png": [
+      1132,
+      498,
+      2313,
+      1679
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/108/术前/5.png": [
+      805,
+      619,
+      1856,
+      1670
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/108/术前/6.png": [
+      963,
+      598,
+      1964,
+      1599
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/109/术前/1.png": [
+      888,
+      481,
+      2090,
+      1683
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/109/术前/2.png": [
+      990,
+      319,
+      2351,
+      1680
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/109/术前/3.png": [
+      640,
+      369,
+      2037,
+      1766
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/109/术前/4.png": [
+      1009,
+      441,
+      2328,
+      1760
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/109/术前/5.png": [
+      792,
+      505,
+      2006,
+      1719
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/109/术前/6.png": [
+      962,
+      607,
+      2028,
+      1673
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/11/术前/1.png": [
+      766,
+      423,
+      2168,
+      1825
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/11/术前/2.png": [
+      1090,
+      464,
+      2378,
+      1752
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/11/术前/3.png": [
+      646,
+      424,
+      1934,
+      1712
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/11/术前/4.png": [
+      996,
+      481,
+      2189,
+      1674
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/11/术前/5.png": [
+      638,
+      439,
+      1941,
+      1742
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/11/术前/6.png": [
+      880,
+      521,
+      2060,
+      1701
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/110/术前/1.png": [
+      768,
+      277,
+      2235,
+      1744
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/110/术前/2.png": [
+      920,
+      330,
+      2371,
+      1781
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/110/术前/3.png": [
+      671,
+      319,
+      1999,
+      1647
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/110/术前/4.png": [
+      893,
+      425,
+      2204,
+      1736
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/110/术前/5.png": [
+      804,
+      426,
+      2078,
+      1700
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/110/术前/6.png": [
+      966,
+      426,
+      2131,
+      1591
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/114/术前/1.png": [
+      732,
+      306,
+      2209,
+      1783
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/114/术前/2.png": [
+      1038,
+      395,
+      2503,
+      1860
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/114/术前/3.png": [
+      548,
+      415,
+      2018,
+      1885
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/114/术前/4.png": [
+      949,
+      408,
+      2343,
+      1802
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/114/术前/5.png": [
+      692,
+      518,
+      1951,
+      1777
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/114/术前/6.png": [
+      879,
+      568,
+      2050,
+      1739
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/115/术前/1.png": [
+      944,
+      446,
+      2100,
+      1602
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/115/术前/2.png": [
+      829,
+      268,
+      1908,
+      1347
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/115/术前/3.png": [
+      1134,
+      304,
+      2119,
+      1289
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/115/术前/4.png": [
+      812,
+      449,
+      1771,
+      1408
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/115/术前/5.png": [
+      1367,
+      505,
+      2400,
+      1538
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/115/术前/6.png": [
+      1054,
+      236,
+      2031,
+      1213
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/117/术前/1.png": [
+      835,
+      365,
+      2180,
+      1710
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/117/术前/2.png": [
+      1081,
+      399,
+      2273,
+      1591
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/117/术前/3.png": [
+      846,
+      457,
+      1995,
+      1606
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/117/术前/4.png": [
+      1031,
+      389,
+      2263,
+      1621
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/117/术前/5.png": [
+      824,
+      446,
+      1998,
+      1620
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/117/术前/6.png": [
+      904,
+      532,
+      2089,
+      1717
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/118/术前/1.png": [
+      722,
+      267,
+      2347,
+      1892
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/118/术前/2.png": [
+      557,
+      306,
+      2168,
+      1917
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/118/术前/3.png": [
+      955,
+      500,
+      2424,
+      1969
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/118/术前/4.png": [
+      453,
+      417,
+      1948,
+      1912
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/118/术前/5.png": [
+      1094,
+      540,
+      2554,
+      2000
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/118/术前/6.png": [
+      876,
+      200,
+      2315,
+      1639
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/120/术前/1.png": [
+      866,
+      407,
+      2132,
+      1673
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/120/术前/2.png": [
+      1062,
+      353,
+      2377,
+      1668
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/120/术前/3.png": [
+      670,
+      317,
+      2061,
+      1708
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/120/术前/4.png": [
+      970,
+      400,
+      2234,
+      1664
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/120/术前/5.png": [
+      828,
+      463,
+      2152,
+      1787
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/120/术前/6.png": [
+      1006,
+      466,
+      2014,
+      1474
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/121/术前/1.png": [
+      853,
+      369,
+      2156,
+      1672
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/121/术前/2.png": [
+      1036,
+      359,
+      2391,
+      1714
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/121/术前/3.png": [
+      696,
+      406,
+      1938,
+      1648
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/121/术前/4.png": [
+      970,
+      522,
+      2215,
+      1767
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/121/术前/5.png": [
+      874,
+      473,
+      2043,
+      1642
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/121/术前/6.png": [
+      1073,
+      588,
+      2039,
+      1554
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/122/术前/1.png": [
+      784,
+      278,
+      2229,
+      1723
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/122/术前/2.png": [
+      1006,
+      330,
+      2405,
+      1729
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/122/术前/3.png": [
+      588,
+      342,
+      1979,
+      1733
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/122/术前/4.png": [
+      1028,
+      448,
+      2294,
+      1714
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/122/术前/5.png": [
+      748,
+      406,
+      2132,
+      1790
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/122/术前/6.png": [
+      948,
+      538,
+      2116,
+      1706
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/123/术前/1.png": [
+      852,
+      578,
+      2050,
+      1776
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/123/术前/2.png": [
+      846,
+      615,
+      2081,
+      1850
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/123/术前/3.png": [
+      879,
+      582,
+      2067,
+      1770
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/123/术前/4.png": [
+      714,
+      488,
+      2035,
+      1809
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/123/术前/5.png": [
+      972,
+      546,
+      2241,
+      1815
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/123/术前/6.png": [
+      1008,
+      716,
+      2085,
+      1793
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/124/术前/1.png": [
+      894,
+      322,
+      2132,
+      1560
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/124/术前/2.png": [
+      824,
+      378,
+      2128,
+      1682
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/124/术前/3.png": [
+      1038,
+      413,
+      2348,
+      1723
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/124/术前/4.png": [
+      556,
+      395,
+      1787,
+      1626
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/124/术前/5.png": [
+      1181,
+      463,
+      2417,
+      1699
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/124/术前/6.png": [
+      805,
+      247,
+      2325,
+      1767
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/125/术前/1.png": [
+      802,
+      329,
+      2205,
+      1732
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/125/术前/2.png": [
+      961,
+      323,
+      2401,
+      1763
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/125/术前/3.png": [
+      367,
+      290,
+      2017,
+      1940
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/125/术前/4.png": [
+      904,
+      371,
+      2337,
+      1804
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/125/术前/5.png": [
+      638,
+      402,
+      2027,
+      1791
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/125/术前/6.png": [
+      931,
+      574,
+      2055,
+      1698
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/128/术前/2.png": [
+      863,
+      459,
+      2193,
+      1789
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/128/术前/3.png": [
+      858,
+      407,
+      2135,
+      1684
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/128/术前/4.png": [
+      690,
+      334,
+      2229,
+      1873
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/128/术前/5.png": [
+      840,
+      434,
+      2212,
+      1806
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/128/术前/6.png": [
+      987,
+      642,
+      2061,
+      1716
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/129/术前/1.png": [
+      753,
+      422,
+      2171,
+      1840
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/129/术前/2.png": [
+      784,
+      381,
+      2388,
+      1985
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/129/术前/3.png": [
+      698,
+      349,
+      2283,
+      1934
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/129/术前/4.png": [
+      706,
+      386,
+      2261,
+      1941
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/129/术前/5.png": [
+      590,
+      382,
+      2181,
+      1973
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/129/术前/6.png": [
+      921,
+      530,
+      2154,
+      1763
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/132/术前/1.png": [
+      646,
+      284,
+      2275,
+      1913
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/132/术前/2.png": [
+      948,
+      394,
+      2348,
+      1794
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/132/术前/3.png": [
+      549,
+      390,
+      2001,
+      1842
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/132/术前/4.png": [
+      940,
+      408,
+      2250,
+      1718
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/132/术前/5.png": [
+      566,
+      361,
+      2022,
+      1817
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/132/术前/6.png": [
+      1043,
+      600,
+      2039,
+      1596
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/133/术前/1.png": [
+      712,
+      211,
+      2388,
+      1887
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/133/术前/2.png": [
+      760,
+      243,
+      2441,
+      1924
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/133/术前/3.png": [
+      1147,
+      491,
+      2453,
+      1797
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/133/术前/4.png": [
+      590,
+      375,
+      2162,
+      1947
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/133/术前/5.png": [
+      978,
+      416,
+      2392,
+      1830
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/133/术前/6.png": [
+      953,
+      346,
+      2269,
+      1662
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/134/术前/1.png": [
+      850,
+      397,
+      2132,
+      1679
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/134/术前/2.png": [
+      1049,
+      502,
+      2406,
+      1859
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/134/术前/3.png": [
+      586,
+      468,
+      1929,
+      1811
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/134/术前/4.png": [
+      910,
+      262,
+      2464,
+      1816
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/134/术前/5.png": [
+      552,
+      406,
+      2026,
+      1880
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/134/术前/6.png": [
+      889,
+      532,
+      2082,
+      1725
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/135/术前/1.png": [
+      832,
+      337,
+      2226,
+      1731
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/135/术前/2.png": [
+      1178,
+      445,
+      2327,
+      1594
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/135/术前/3.png": [
+      601,
+      415,
+      1894,
+      1708
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/135/术前/4.png": [
+      1047,
+      509,
+      2259,
+      1721
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/135/术前/5.png": [
+      700,
+      458,
+      1934,
+      1692
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/135/术前/6.png": [
+      947,
+      588,
+      1985,
+      1626
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/137/术前/1.png": [
+      857,
+      386,
+      2204,
+      1733
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/137/术前/2.png": [
+      1116,
+      434,
+      2250,
+      1568
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/137/术前/3.png": [
+      504,
+      329,
+      1941,
+      1766
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/137/术前/4.png": [
+      1118,
+      480,
+      2332,
+      1694
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/137/术前/5.png": [
+      573,
+      446,
+      1971,
+      1844
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/137/术前/6.png": [
+      1002,
+      600,
+      2039,
+      1637
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/139/术前/1.png": [
+      844,
+      392,
+      2154,
+      1702
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/139/术前/2.png": [
+      1170,
+      424,
+      2448,
+      1702
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/139/术前/3.png": [
+      556,
+      522,
+      1844,
+      1810
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/139/术前/4.png": [
+      1023,
+      478,
+      2333,
+      1788
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/139/术前/5.png": [
+      681,
+      481,
+      1984,
+      1784
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/139/术前/6.png": [
+      999,
+      670,
+      1986,
+      1657
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/141/术前/1.png": [
+      739,
+      375,
+      2243,
+      1879
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/141/术前/2.png": [
+      1016,
+      525,
+      2251,
+      1760
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/141/术前/3.png": [
+      705,
+      382,
+      2100,
+      1777
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/141/术前/4.png": [
+      1006,
+      561,
+      2198,
+      1753
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/141/术前/5.png": [
+      507,
+      307,
+      2157,
+      1957
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/141/术前/6.png": [
+      975,
+      710,
+      1950,
+      1685
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/142/术前/1.png": [
+      785,
+      395,
+      2241,
+      1851
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/142/术前/2.png": [
+      1090,
+      299,
+      2530,
+      1739
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/142/术前/3.png": [
+      383,
+      311,
+      1938,
+      1866
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/142/术前/4.png": [
+      1006,
+      394,
+      2531,
+      1919
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/142/术前/5.png": [
+      513,
+      403,
+      2002,
+      1892
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/142/术前/6.png": [
+      1047,
+      690,
+      1898,
+      1541
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/144/术前/1.png": [
+      849,
+      358,
+      2134,
+      1643
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/144/术前/2.png": [
+      644,
+      275,
+      2049,
+      1680
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/144/术前/3.png": [
+      728,
+      442,
+      1859,
+      1573
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/144/术前/4.png": [
+      944,
+      377,
+      2226,
+      1659
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/144/术前/5.png": [
+      759,
+      497,
+      1925,
+      1663
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/144/术前/6.png": [
+      1076,
+      604,
+      2009,
+      1537
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/146/术前/1.png": [
+      835,
+      404,
+      2088,
+      1657
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/146/术前/2.png": [
+      964,
+      229,
+      2493,
+      1758
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/146/术前/3.png": [
+      362,
+      241,
+      1984,
+      1863
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/146/术前/4.png": [
+      866,
+      279,
+      2401,
+      1814
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/146/术前/5.png": [
+      608,
+      313,
+      2103,
+      1808
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/146/术前/6.png": [
+      859,
+      567,
+      2014,
+      1722
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/147/术前/1.png": [
+      816,
+      394,
+      2149,
+      1727
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/147/术前/2.png": [
+      992,
+      327,
+      2367,
+      1702
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/147/术前/3.png": [
+      762,
+      461,
+      2038,
+      1737
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/147/术前/4.png": [
+      994,
+      503,
+      2216,
+      1725
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/147/术前/5.png": [
+      733,
+      449,
+      2030,
+      1746
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/147/术前/6.png": [
+      942,
+      682,
+      1895,
+      1635
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/149/术前/1.png": [
+      889,
+      423,
+      2131,
+      1665
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/149/术前/2.png": [
+      667,
+      451,
+      1987,
+      1771
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/149/术前/3.png": [
+      1080,
+      454,
+      2444,
+      1818
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/149/术前/4.png": [
+      340,
+      427,
+      1672,
+      1759
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/149/术前/5.png": [
+      986,
+      444,
+      2527,
+      1985
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/149/术前/6.png": [
+      860,
+      508,
+      2105,
+      1753
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/15/术前/1.png": [
+      820,
+      390,
+      2138,
+      1708
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/15/术前/2.png": [
+      954,
+      294,
+      2424,
+      1764
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/15/术前/3.png": [
+      578,
+      427,
+      2001,
+      1850
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/15/术前/4.png": [
+      947,
+      287,
+      2393,
+      1733
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/15/术前/5.png": [
+      598,
+      446,
+      1985,
+      1833
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/15/术前/6.png": [
+      971,
+      550,
+      2077,
+      1656
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/151/术前/1.png": [
+      906,
+      522,
+      2120,
+      1736
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/151/术前/2.png": [
+      1044,
+      599,
+      2155,
+      1710
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/151/术前/3.png": [
+      726,
+      471,
+      1922,
+      1667
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/151/术前/4.png": [
+      703,
+      507,
+      1971,
+      1775
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/151/术前/5.png": [
+      832,
+      558,
+      2110,
+      1836
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/151/术前/6.png": [
+      945,
+      676,
+      1975,
+      1706
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/152/术前/1.png": [
+      836,
+      392,
+      2219,
+      1775
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/152/术前/2.png": [
+      1091,
+      427,
+      2397,
+      1733
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/152/术前/3.png": [
+      562,
+      396,
+      2001,
+      1835
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/152/术前/4.png": [
+      954,
+      370,
+      2355,
+      1771
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/152/术前/5.png": [
+      571,
+      364,
+      1995,
+      1788
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/152/术前/6.png": [
+      946,
+      582,
+      2039,
+      1675
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/153/术前/1.png": [
+      670,
+      239,
+      2195,
+      1764
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/153/术前/2.png": [
+      978,
+      224,
+      2409,
+      1655
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/153/术前/3.png": [
+      412,
+      263,
+      1948,
+      1799
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/153/术前/4.png": [
+      962,
+      301,
+      2445,
+      1784
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/153/术前/5.png": [
+      586,
+      370,
+      2000,
+      1784
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/153/术前/6.png": [
+      941,
+      624,
+      2148,
+      1831
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/156/术前/1.png": [
+      762,
+      344,
+      2176,
+      1758
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/156/术前/2.png": [
+      918,
+      361,
+      2347,
+      1790
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/156/术前/3.png": [
+      671,
+      372,
+      2066,
+      1767
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/156/术前/4.png": [
+      914,
+      404,
+      2338,
+      1828
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/156/术前/5.png": [
+      576,
+      411,
+      1972,
+      1807
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/156/术前/6.png": [
+      990,
+      662,
+      1983,
+      1655
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/159/术前/1.png": [
+      838,
+      348,
+      2137,
+      1647
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/159/术前/2.png": [
+      1054,
+      350,
+      2309,
+      1605
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/159/术前/3.png": [
+      783,
+      521,
+      1957,
+      1695
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/159/术前/4.png": [
+      982,
+      359,
+      2227,
+      1604
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/159/术前/5.png": [
+      812,
+      452,
+      1997,
+      1637
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/159/术前/6.png": [
+      982,
+      551,
+      2078,
+      1647
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/160/术前/1.png": [
+      746,
+      208,
+      2199,
+      1661
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/160/术前/2.png": [
+      970,
+      408,
+      2427,
+      1865
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/160/术前/3.png": [
+      530,
+      349,
+      2006,
+      1825
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/160/术前/4.png": [
+      890,
+      383,
+      2305,
+      1798
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/160/术前/5.png": [
+      661,
+      436,
+      2071,
+      1846
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/160/术前/6.png": [
+      927,
+      564,
+      2086,
+      1723
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/163/术前/1.png": [
+      739,
+      286,
+      2182,
+      1729
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/163/术前/2.png": [
+      858,
+      317,
+      2306,
+      1765
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/163/术前/3.png": [
+      570,
+      327,
+      2006,
+      1763
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/163/术前/4.png": [
+      857,
+      356,
+      2272,
+      1771
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/163/术前/5.png": [
+      709,
+      279,
+      2182,
+      1752
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/163/术前/6.png": [
+      957,
+      578,
+      2020,
+      1641
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/164/术前/1.png": [
+      734,
+      351,
+      2267,
+      1884
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/164/术前/2.png": [
+      958,
+      361,
+      2435,
+      1838
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/164/术前/3.png": [
+      650,
+      393,
+      1909,
+      1652
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/164/术前/4.png": [
+      914,
+      348,
+      2290,
+      1724
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/164/术前/5.png": [
+      828,
+      482,
+      2007,
+      1661
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/164/术前/6.png": [
+      871,
+      556,
+      2116,
+      1801
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/166/术前/1.png": [
+      846,
+      441,
+      2183,
+      1778
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/166/术前/2.png": [
+      1016,
+      493,
+      2243,
+      1720
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/166/术前/3.png": [
+      683,
+      473,
+      1960,
+      1750
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/166/术前/4.png": [
+      1108,
+      597,
+      2208,
+      1697
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/166/术前/5.png": [
+      737,
+      487,
+      1948,
+      1698
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/166/术前/6.png": [
+      1038,
+      602,
+      2045,
+      1609
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/167/术前/1.png": [
+      766,
+      387,
+      2213,
+      1834
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/167/术前/2.png": [
+      990,
+      406,
+      2333,
+      1749
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/167/术前/3.png": [
+      668,
+      504,
+      1972,
+      1808
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/167/术前/4.png": [
+      980,
+      466,
+      2337,
+      1823
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/167/术前/5.png": [
+      772,
+      430,
+      2092,
+      1750
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/167/术前/6.png": [
+      854,
+      542,
+      2072,
+      1760
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/168/术前/1.png": [
+      836,
+      364,
+      2161,
+      1689
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/168/术前/2.png": [
+      1072,
+      489,
+      2250,
+      1667
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/168/术前/3.png": [
+      688,
+      477,
+      1927,
+      1716
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/168/术前/4.png": [
+      1070,
+      474,
+      2254,
+      1658
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/168/术前/5.png": [
+      790,
+      525,
+      1910,
+      1645
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/168/术前/6.png": [
+      878,
+      542,
+      2020,
+      1684
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/169/术前/1.png": [
+      847,
+      380,
+      2233,
+      1766
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/169/术前/2.png": [
+      746,
+      410,
+      1977,
+      1641
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/169/术前/3.png": [
+      1045,
+      454,
+      2298,
+      1707
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/169/术前/4.png": [
+      941,
+      498,
+      2139,
+      1696
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/169/术前/5.png": [
+      744,
+      388,
+      2059,
+      1703
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/169/术前/6.png": [
+      1054,
+      619,
+      1981,
+      1546
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/17/术前/1.png": [
+      773,
+      295,
+      2124,
+      1646
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/17/术前/2.png": [
+      946,
+      325,
+      2412,
+      1791
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/17/术前/3.png": [
+      619,
+      376,
+      1971,
+      1728
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/17/术前/4.png": [
+      880,
+      298,
+      2283,
+      1701
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/17/术前/5.png": [
+      756,
+      420,
+      1901,
+      1565
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/17/术前/6.png": [
+      863,
+      410,
+      2053,
+      1600
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/170/术前/1.png": [
+      976,
+      459,
+      2081,
+      1564
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/170/术前/2.png": [
+      1052,
+      467,
+      2387,
+      1802
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/170/术前/3.png": [
+      532,
+      417,
+      1886,
+      1771
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/170/术前/4.png": [
+      1016,
+      446,
+      2385,
+      1815
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/170/术前/5.png": [
+      630,
+      405,
+      2092,
+      1867
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/170/术前/6.png": [
+      1112,
+      700,
+      1972,
+      1560
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/171/术前/1.png": [
+      930,
+      330,
+      1969,
+      1369
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/171/术前/2.png": [
+      982,
+      529,
+      2016,
+      1563
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/171/术前/3.png": [
+      1058,
+      520,
+      2143,
+      1605
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/171/术前/4.png": [
+      569,
+      467,
+      1531,
+      1429
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/171/术前/5.png": [
+      1154,
+      602,
+      2111,
+      1559
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/171/术前/6.png": [
+      1061,
+      302,
+      1935,
+      1176
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/172/术前/1.png": [
+      1008,
+      508,
+      2046,
+      1546
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/172/术前/2.png": [
+      1038,
+      405,
+      2333,
+      1700
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/172/术前/3.png": [
+      722,
+      482,
+      2094,
+      1854
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/172/术前/4.png": [
+      944,
+      447,
+      2240,
+      1743
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/172/术前/5.png": [
+      806,
+      484,
+      2053,
+      1731
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/172/术前/6.png": [
+      1007,
+      668,
+      2017,
+      1678
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/173/术前/1.png": [
+      786,
+      385,
+      2224,
+      1823
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/173/术前/2.png": [
+      978,
+      339,
+      2347,
+      1708
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/173/术前/3.png": [
+      632,
+      409,
+      1964,
+      1741
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/173/术前/4.png": [
+      947,
+      434,
+      2290,
+      1777
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/173/术前/5.png": [
+      716,
+      483,
+      2004,
+      1771
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/173/术前/6.png": [
+      993,
+      572,
+      2001,
+      1580
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/174/术前/1.png": [
+      58,
+      799,
+      1827,
+      2568
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/174/术前/2.png": [
+      236,
+      960,
+      1706,
+      2430
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/174/术前/3.png": [
+      264,
+      791,
+      1779,
+      2306
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/174/术前/4.png": [
+      86,
+      1037,
+      1548,
+      2499
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/174/术前/5.png": [
+      324,
+      946,
+      1700,
+      2322
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/174/术前/6.png": [
+      289,
+      894,
+      1475,
+      2080
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/176/术前/1.png": [
+      814,
+      514,
+      2061,
+      1761
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/176/术前/2.png": [
+      1076,
+      364,
+      2496,
+      1784
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/176/术前/3.png": [
+      664,
+      464,
+      1983,
+      1783
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/176/术前/4.png": [
+      930,
+      376,
+      2365,
+      1811
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/176/术前/5.png": [
+      754,
+      462,
+      2172,
+      1880
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/176/术前/6.png": [
+      993,
+      714,
+      1915,
+      1636
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/177/术前/1.png": [
+      818,
+      452,
+      2144,
+      1778
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/177/术前/2.png": [
+      977,
+      402,
+      2249,
+      1674
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/177/术前/3.png": [
+      604,
+      391,
+      1965,
+      1752
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/177/术前/4.png": [
+      992,
+      430,
+      2270,
+      1708
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/177/术前/5.png": [
+      612,
+      298,
+      2033,
+      1719
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/177/术前/6.png": [
+      947,
+      525,
+      2090,
+      1668
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/178/术前/1.png": [
+      830,
+      428,
+      2183,
+      1781
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/178/术前/2.png": [
+      982,
+      520,
+      2192,
+      1730
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/178/术前/3.png": [
+      761,
+      515,
+      1905,
+      1659
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/178/术前/4.png": [
+      929,
+      399,
+      2184,
+      1654
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/178/术前/5.png": [
+      762,
+      510,
+      2001,
+      1749
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/178/术前/6.png": [
+      991,
+      619,
+      2010,
+      1638
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/179/术前/1.png": [
+      0,
+      122,
+      1220,
+      1342
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/179/术前/2.png": [
+      0,
+      230,
+      1215,
+      1445
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/179/术前/3.png": [
+      0,
+      215,
+      1158,
+      1373
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/179/术前/4.png": [
+      0,
+      322,
+      857,
+      1179
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/179/术前/5.png": [
+      0,
+      338,
+      934,
+      1272
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/179/术前/6.png": [
+      160,
+      288,
+      1119,
+      1247
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/18/术前/1.png": [
+      826,
+      381,
+      2185,
+      1740
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/18/术前/2.png": [
+      1091,
+      343,
+      2422,
+      1674
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/18/术前/3.png": [
+      572,
+      355,
+      1989,
+      1772
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/18/术前/4.png": [
+      932,
+      408,
+      2234,
+      1710
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/18/术前/5.png": [
+      670,
+      453,
+      1959,
+      1742
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/18/术前/6.png": [
+      929,
+      547,
+      2064,
+      1682
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/180/术前/1.png": [
+      834,
+      418,
+      2181,
+      1765
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/180/术前/2.png": [
+      916,
+      256,
+      2442,
+      1782
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/180/术前/3.png": [
+      752,
+      459,
+      1973,
+      1680
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/180/术前/4.png": [
+      1017,
+      386,
+      2390,
+      1759
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/180/术前/5.png": [
+      158,
+      82,
+      1539,
+      1463
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/180/术前/6.png": [
+      959,
+      558,
+      2030,
+      1629
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/181/术前/1.png": [
+      889,
+      471,
+      2163,
+      1745
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/181/术前/2.png": [
+      968,
+      383,
+      2376,
+      1791
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/181/术前/3.png": [
+      514,
+      365,
+      1984,
+      1835
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/181/术前/4.png": [
+      898,
+      381,
+      2286,
+      1769
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/181/术前/5.png": [
+      733,
+      417,
+      2012,
+      1696
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/181/术前/6.png": [
+      1048,
+      632,
+      2018,
+      1602
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/182/术前/1.png": [
+      990,
+      532,
+      2186,
+      1728
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/182/术前/2.png": [
+      964,
+      563,
+      2173,
+      1772
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/182/术前/3.png": [
+      854,
+      423,
+      2114,
+      1683
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/182/术前/4.png": [
+      968,
+      491,
+      2235,
+      1758
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/182/术前/5.png": [
+      842,
+      541,
+      2127,
+      1826
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/182/术前/6.png": [
+      961,
+      601,
+      2103,
+      1743
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/183/术前/1.png": [
+      38,
+      737,
+      1575,
+      2274
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/183/术前/2.png": [
+      230,
+      1044,
+      1695,
+      2509
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/183/术前/3.png": [
+      230,
+      1123,
+      1686,
+      2579
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/183/术前/4.png": [
+      140,
+      717,
+      1993,
+      2570
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/183/术前/5.png": [
+      159,
+      862,
+      1863,
+      2566
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/183/术前/6.png": [
+      547,
+      213,
+      2334,
+      2000
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/186/术前/1.png": [
+      808,
+      428,
+      2083,
+      1703
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/186/术前/2.png": [
+      1028,
+      441,
+      2299,
+      1712
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/186/术前/3.png": [
+      601,
+      387,
+      1909,
+      1695
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/186/术前/4.png": [
+      942,
+      450,
+      2235,
+      1743
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/186/术前/5.png": [
+      698,
+      511,
+      1983,
+      1796
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/186/术前/6.png": [
+      936,
+      596,
+      1996,
+      1656
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/187/术前/1.png": [
+      798,
+      394,
+      2020,
+      1616
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/187/术前/2.png": [
+      545,
+      391,
+      1879,
+      1725
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/187/术前/3.png": [
+      1036,
+      390,
+      2382,
+      1736
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/187/术前/4.png": [
+      453,
+      462,
+      1756,
+      1765
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/187/术前/5.png": [
+      844,
+      425,
+      2151,
+      1732
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/187/术前/6.png": [
+      1024,
+      253,
+      2007,
+      1236
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/188/术前/1.png": [
+      864,
+      311,
+      2233,
+      1680
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/188/术前/2.png": [
+      1101,
+      401,
+      2410,
+      1710
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/188/术前/3.png": [
+      498,
+      255,
+      1974,
+      1731
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/188/术前/4.png": [
+      1074,
+      352,
+      2372,
+      1650
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/188/术前/5.png": [
+      652,
+      391,
+      2013,
+      1752
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/188/术前/6.png": [
+      1017,
+      645,
+      2019,
+      1647
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/189/术前/1.png": [
+      884,
+      442,
+      2293,
+      1851
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/189/术前/2.png": [
+      944,
+      504,
+      2366,
+      1926
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/189/术前/3.png": [
+      858,
+      371,
+      2404,
+      1917
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/189/术前/4.png": [
+      906,
+      396,
+      2316,
+      1806
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/189/术前/5.png": [
+      708,
+      438,
+      2267,
+      1997
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/189/术前/6.png": [
+      941,
+      482,
+      2312,
+      1853
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/19/术前/1.png": [
+      730,
+      277,
+      2272,
+      1819
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/19/术前/2.png": [
+      1002,
+      282,
+      2514,
+      1794
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/19/术前/3.png": [
+      586,
+      364,
+      2046,
+      1824
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/19/术前/4.png": [
+      959,
+      374,
+      2431,
+      1846
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/19/术前/5.png": [
+      718,
+      481,
+      1975,
+      1738
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/19/术前/6.png": [
+      920,
+      572,
+      2055,
+      1707
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/190/术前/1.png": [
+      752,
+      360,
+      2105,
+      1713
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/190/术前/2.png": [
+      920,
+      349,
+      2317,
+      1746
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/190/术前/3.png": [
+      558,
+      383,
+      2009,
+      1834
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/190/术前/4.png": [
+      921,
+      366,
+      2313,
+      1758
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/190/术前/5.png": [
+      704,
+      447,
+      2032,
+      1775
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/190/术前/6.png": [
+      1040,
+      626,
+      2041,
+      1627
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/191/术前/1.png": [
+      780,
+      435,
+      2168,
+      1823
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/191/术前/2.png": [
+      1066,
+      514,
+      2298,
+      1746
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/191/术前/3.png": [
+      704,
+      446,
+      1960,
+      1702
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/191/术前/4.png": [
+      1074,
+      471,
+      2311,
+      1708
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/191/术前/5.png": [
+      758,
+      481,
+      1920,
+      1643
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/191/术前/6.png": [
+      1052,
+      664,
+      2000,
+      1612
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/192/术前/1.png": [
+      794,
+      385,
+      2151,
+      1742
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/192/术前/2.png": [
+      994,
+      340,
+      2282,
+      1628
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/192/术前/3.png": [
+      444,
+      269,
+      2005,
+      1830
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/192/术前/4.png": [
+      1026,
+      460,
+      2247,
+      1681
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/192/术前/5.png": [
+      702,
+      422,
+      1969,
+      1689
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/192/术前/6.png": [
+      1014,
+      631,
+      1999,
+      1616
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/193/术前/1.png": [
+      912,
+      340,
+      2071,
+      1499
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/193/术前/2.png": [
+      732,
+      239,
+      1777,
+      1284
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/193/术前/3.png": [
+      1134,
+      302,
+      2168,
+      1336
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/193/术前/4.png": [
+      708,
+      274,
+      1736,
+      1302
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/193/术前/5.png": [
+      1200,
+      274,
+      2222,
+      1296
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/193/术前/6.png": [
+      1106,
+      151,
+      2055,
+      1100
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/194/术前/1.png": [
+      838,
+      404,
+      2135,
+      1701
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/194/术前/2.png": [
+      1038,
+      301,
+      2416,
+      1679
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/194/术前/3.png": [
+      537,
+      450,
+      1883,
+      1796
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/194/术前/4.png": [
+      984,
+      410,
+      2301,
+      1727
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/194/术前/5.png": [
+      603,
+      443,
+      1985,
+      1825
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/194/术前/6.png": [
+      997,
+      701,
+      2018,
+      1722
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/196/术前/1.png": [
+      1074,
+      559,
+      1921,
+      1406
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/196/术前/2.png": [
+      1040,
+      572,
+      1945,
+      1477
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/196/术前/3.png": [
+      1189,
+      538,
+      2070,
+      1419
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/196/术前/4.png": [
+      974,
+      529,
+      1869,
+      1424
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/196/术前/5.png": [
+      1268,
+      474,
+      2191,
+      1397
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/196/术前/6.png": [
+      1150,
+      576,
+      1830,
+      1256
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/197/术前/1.png": [
+      922,
+      500,
+      2006,
+      1584
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/197/术前/2.png": [
+      782,
+      493,
+      1941,
+      1652
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/197/术前/3.png": [
+      1126,
+      518,
+      2215,
+      1607
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/197/术前/4.png": [
+      870,
+      639,
+      1941,
+      1710
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/197/术前/5.png": [
+      983,
+      512,
+      2164,
+      1693
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/197/术前/6.png": [
+      1063,
+      214,
+      1901,
+      1052
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/198/术前/1.png": [
+      678,
+      328,
+      2310,
+      1960
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/198/术前/2.png": [
+      946,
+      362,
+      2410,
+      1826
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/198/术前/3.png": [
+      508,
+      369,
+      2070,
+      1931
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/198/术前/4.png": [
+      836,
+      413,
+      2292,
+      1869
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/198/术前/5.png": [
+      634,
+      367,
+      2182,
+      1915
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/198/术前/6.png": [
+      867,
+      510,
+      2182,
+      1825
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/199/术前/1.png": [
+      681,
+      324,
+      2185,
+      1828
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/199/术前/2.png": [
+      1022,
+      278,
+      2527,
+      1783
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/199/术前/3.png": [
+      472,
+      269,
+      2081,
+      1878
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/199/术前/4.png": [
+      774,
+      339,
+      2312,
+      1877
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/199/术前/5.png": [
+      533,
+      363,
+      2102,
+      1932
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/199/术前/6.png": [
+      872,
+      583,
+      2037,
+      1748
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/20/术前/1.png": [
+      934,
+      552,
+      2111,
+      1729
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/20/术前/2.png": [
+      1042,
+      487,
+      2274,
+      1719
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/20/术前/3.png": [
+      676,
+      486,
+      1886,
+      1696
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/20/术前/4.png": [
+      1000,
+      352,
+      2267,
+      1619
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/20/术前/5.png": [
+      709,
+      426,
+      1967,
+      1684
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/20/术前/6.png": [
+      972,
+      626,
+      1990,
+      1644
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/200/术前/1.png": [
+      819,
+      411,
+      2180,
+      1772
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/200/术前/2.png": [
+      1113,
+      482,
+      2268,
+      1637
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/200/术前/3.png": [
+      766,
+      537,
+      1902,
+      1673
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/200/术前/4.png": [
+      1140,
+      577,
+      2237,
+      1674
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/200/术前/5.png": [
+      660,
+      508,
+      1933,
+      1781
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/200/术前/6.png": [
+      1074,
+      597,
+      2065,
+      1588
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/21/术前/1.png": [
+      732,
+      345,
+      2242,
+      1855
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/21/术前/2.png": [
+      910,
+      361,
+      2219,
+      1670
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/21/术前/3.png": [
+      739,
+      397,
+      2199,
+      1857
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/21/术前/4.png": [
+      1009,
+      494,
+      2273,
+      1758
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/21/术前/5.png": [
+      950,
+      402,
+      2326,
+      1778
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/21/术前/6.png": [
+      942,
+      508,
+      2091,
+      1657
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/22/术前/1.png": [
+      856,
+      401,
+      2105,
+      1650
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/22/术前/2.png": [
+      1050,
+      402,
+      2304,
+      1656
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/22/术前/3.png": [
+      712,
+      399,
+      1972,
+      1659
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/22/术前/4.png": [
+      842,
+      336,
+      2203,
+      1697
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/22/术前/5.png": [
+      766,
+      351,
+      2091,
+      1676
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/22/术前/6.png": [
+      990,
+      658,
+      1957,
+      1625
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/23/术前/1.png": [
+      854,
+      415,
+      2057,
+      1618
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/23/术前/2.png": [
+      989,
+      394,
+      2311,
+      1716
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/23/术前/3.png": [
+      684,
+      360,
+      2127,
+      1803
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/23/术前/4.png": [
+      954,
+      362,
+      2333,
+      1741
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/23/术前/5.png": [
+      612,
+      329,
+      2058,
+      1775
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/23/术前/6.png": [
+      997,
+      581,
+      2027,
+      1611
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/24/术前/1.png": [
+      812,
+      382,
+      2141,
+      1711
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/24/术前/2.png": [
+      994,
+      398,
+      2284,
+      1688
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/24/术前/3.png": [
+      585,
+      400,
+      1921,
+      1736
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/24/术前/4.png": [
+      1032,
+      514,
+      2232,
+      1714
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/24/术前/5.png": [
+      742,
+      450,
+      2003,
+      1711
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/24/术前/6.png": [
+      961,
+      710,
+      1976,
+      1725
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/27/术前/1.png": [
+      652,
+      163,
+      2329,
+      1840
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/27/术前/2.png": [
+      967,
+      430,
+      2311,
+      1774
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/27/术前/3.png": [
+      514,
+      342,
+      2017,
+      1845
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/27/术前/4.png": [
+      954,
+      474,
+      2253,
+      1773
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/27/术前/5.png": [
+      602,
+      426,
+      1998,
+      1822
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/27/术前/6.png": [
+      954,
+      554,
+      2007,
+      1607
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/28/术前/1.png": [
+      334,
+      200,
+      1472,
+      1338
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/28/术前/2.png": [
+      903,
+      513,
+      2044,
+      1654
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/28/术前/3.png": [
+      808,
+      392,
+      1974,
+      1558
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/28/术前/4.png": [
+      1012,
+      552,
+      2199,
+      1739
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/28/术前/5.png": [
+      774,
+      527,
+      1954,
+      1707
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/28/术前/6.png": [
+      982,
+      566,
+      2005,
+      1589
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/3/术前/1.png": [
+      885,
+      532,
+      1993,
+      1640
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/3/术前/2.png": [
+      916,
+      261,
+      2405,
+      1750
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/3/术前/3.png": [
+      632,
+      478,
+      1942,
+      1788
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/3/术前/4.png": [
+      992,
+      456,
+      2268,
+      1732
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/3/术前/5.png": [
+      828,
+      472,
+      2038,
+      1682
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/3/术前/6.png": [
+      941,
+      571,
+      2068,
+      1698
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/30/术前/1.png": [
+      760,
+      368,
+      2145,
+      1753
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/30/术前/2.png": [
+      1058,
+      367,
+      2462,
+      1771
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/30/术前/3.png": [
+      526,
+      411,
+      1954,
+      1839
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/30/术前/4.png": [
+      958,
+      465,
+      2280,
+      1787
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/30/术前/5.png": [
+      618,
+      530,
+      1905,
+      1817
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/30/术前/6.png": [
+      935,
+      573,
+      2047,
+      1685
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/31/术前/1.png": [
+      804,
+      388,
+      2090,
+      1674
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/31/术前/2.png": [
+      1014,
+      410,
+      2379,
+      1775
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/31/术前/3.png": [
+      575,
+      411,
+      2010,
+      1846
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/31/术前/4.png": [
+      942,
+      483,
+      2333,
+      1874
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/31/术前/5.png": [
+      695,
+      422,
+      2032,
+      1759
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/31/术前/6.png": [
+      986,
+      572,
+      2054,
+      1640
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/32/术前/1.png": [
+      758,
+      301,
+      2209,
+      1752
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/32/术前/2.png": [
+      1002,
+      313,
+      2427,
+      1738
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/32/术前/3.png": [
+      665,
+      466,
+      1960,
+      1761
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/32/术前/4.png": [
+      883,
+      423,
+      2236,
+      1776
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/32/术前/5.png": [
+      778,
+      526,
+      1938,
+      1686
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/32/术前/6.png": [
+      986,
+      580,
+      1994,
+      1588
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/33/术前/1.png": [
+      708,
+      268,
+      2279,
+      1839
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/33/术前/2.png": [
+      1006,
+      403,
+      2415,
+      1812
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/33/术前/3.png": [
+      624,
+      450,
+      1987,
+      1813
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/33/术前/4.png": [
+      942,
+      316,
+      2522,
+      1896
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/33/术前/5.png": [
+      445,
+      153,
+      2188,
+      1896
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/33/术前/6.png": [
+      970,
+      630,
+      1991,
+      1651
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/34/术前/1.png": [
+      766,
+      312,
+      2213,
+      1759
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/34/术前/2.png": [
+      986,
+      473,
+      2285,
+      1772
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/34/术前/3.png": [
+      558,
+      307,
+      2004,
+      1753
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/34/术前/4.png": [
+      962,
+      426,
+      2257,
+      1721
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/34/术前/5.png": [
+      714,
+      490,
+      1948,
+      1724
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/34/术前/6.png": [
+      944,
+      614,
+      1981,
+      1651
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/35/术前/1.png": [
+      744,
+      235,
+      2272,
+      1763
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/35/术前/2.png": [
+      1116,
+      368,
+      2335,
+      1587
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/35/术前/3.png": [
+      680,
+      418,
+      1854,
+      1592
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/35/术前/4.png": [
+      1040,
+      360,
+      2262,
+      1582
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/35/术前/5.png": [
+      742,
+      526,
+      1912,
+      1696
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/35/术前/6.png": [
+      853,
+      476,
+      2071,
+      1694
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/36/术前/1.png": [
+      738,
+      245,
+      2236,
+      1743
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/36/术前/2.png": [
+      974,
+      315,
+      2363,
+      1704
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/36/术前/3.png": [
+      590,
+      422,
+      1939,
+      1771
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/36/术前/4.png": [
+      918,
+      334,
+      2316,
+      1732
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/36/术前/5.png": [
+      708,
+      365,
+      2005,
+      1662
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/36/术前/6.png": [
+      864,
+      546,
+      2041,
+      1723
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/37/术前/1.png": [
+      894,
+      531,
+      2113,
+      1750
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/37/术前/2.png": [
+      1040,
+      411,
+      2311,
+      1682
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/37/术前/3.png": [
+      749,
+      521,
+      1919,
+      1691
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/37/术前/4.png": [
+      1001,
+      470,
+      2243,
+      1712
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/37/术前/5.png": [
+      814,
+      486,
+      1954,
+      1626
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/37/术前/6.png": [
+      960,
+      622,
+      2010,
+      1672
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/38/术前/1.png": [
+      845,
+      449,
+      2081,
+      1685
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/38/术前/2.png": [
+      1034,
+      424,
+      2252,
+      1642
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/38/术前/3.png": [
+      596,
+      441,
+      1836,
+      1681
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/38/术前/4.png": [
+      937,
+      433,
+      2274,
+      1770
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/38/术前/5.png": [
+      766,
+      474,
+      1933,
+      1641
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/38/术前/6.png": [
+      1037,
+      977,
+      1973,
+      1913
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/39/术前/1.png": [
+      833,
+      366,
+      2107,
+      1640
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/39/术前/2.png": [
+      1078,
+      406,
+      2456,
+      1784
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/39/术前/3.png": [
+      610,
+      394,
+      1914,
+      1698
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/39/术前/4.png": [
+      982,
+      371,
+      2338,
+      1727
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/39/术前/5.png": [
+      653,
+      453,
+      1977,
+      1777
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/39/术前/6.png": [
+      1012,
+      633,
+      2005,
+      1626
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/4/术前/1.png": [
+      802,
+      355,
+      2200,
+      1753
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/4/术前/2.png": [
+      1040,
+      344,
+      2296,
+      1600
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/4/术前/3.png": [
+      610,
+      450,
+      2034,
+      1874
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/4/术前/4.png": [
+      1016,
+      484,
+      2345,
+      1813
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/4/术前/5.png": [
+      607,
+      421,
+      1977,
+      1791
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/4/术前/6.png": [
+      921,
+      492,
+      2190,
+      1761
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/40/术前/1.png": [
+      786,
+      355,
+      2166,
+      1735
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/40/术前/2.png": [
+      1068,
+      463,
+      2352,
+      1747
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/40/术前/3.png": [
+      602,
+      380,
+      1982,
+      1760
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/40/术前/4.png": [
+      998,
+      545,
+      2209,
+      1756
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/40/术前/5.png": [
+      748,
+      453,
+      1989,
+      1694
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/40/术前/6.png": [
+      909,
+      709,
+      1942,
+      1742
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/41/术前/1.png": [
+      776,
+      351,
+      2160,
+      1735
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/41/术前/2.png": [
+      1003,
+      317,
+      2423,
+      1737
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/41/术前/3.png": [
+      588,
+      394,
+      1933,
+      1739
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/41/术前/4.png": [
+      888,
+      352,
+      2350,
+      1814
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/41/术前/5.png": [
+      549,
+      420,
+      1939,
+      1810
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/41/术前/6.png": [
+      927,
+      574,
+      2007,
+      1654
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/42/术前/1.png": [
+      716,
+      268,
+      2213,
+      1765
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/42/术前/2.png": [
+      1092,
+      509,
+      2326,
+      1743
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/42/术前/3.png": [
+      366,
+      353,
+      1957,
+      1944
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/42/术前/4.png": [
+      978,
+      350,
+      2364,
+      1736
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/42/术前/5.png": [
+      634,
+      476,
+      2070,
+      1912
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/42/术前/6.png": [
+      962,
+      562,
+      2055,
+      1655
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/43/术前/1.png": [
+      748,
+      363,
+      2151,
+      1766
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/43/术前/2.png": [
+      1002,
+      356,
+      2463,
+      1817
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/43/术前/3.png": [
+      529,
+      373,
+      2025,
+      1869
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/43/术前/4.png": [
+      896,
+      501,
+      2230,
+      1835
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/43/术前/5.png": [
+      572,
+      389,
+      2077,
+      1894
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/43/术前/6.png": [
+      881,
+      570,
+      1979,
+      1668
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/44/术前/1.png": [
+      792,
+      399,
+      2154,
+      1761
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/44/术前/2.png": [
+      1081,
+      379,
+      2383,
+      1681
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/44/术前/3.png": [
+      582,
+      447,
+      1946,
+      1811
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/44/术前/4.png": [
+      812,
+      443,
+      2128,
+      1759
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/44/术前/5.png": [
+      811,
+      477,
+      2128,
+      1794
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/44/术前/6.png": [
+      1001,
+      576,
+      2003,
+      1578
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/45/术前/1.png": [
+      780,
+      319,
+      2158,
+      1697
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/45/术前/2.png": [
+      1068,
+      383,
+      2387,
+      1702
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/45/术前/3.png": [
+      636,
+      435,
+      2012,
+      1811
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/45/术前/4.png": [
+      1038,
+      448,
+      2336,
+      1746
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/45/术前/5.png": [
+      696,
+      383,
+      2065,
+      1752
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/45/术前/6.png": [
+      969,
+      554,
+      2058,
+      1643
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/46/术前/1.png": [
+      725,
+      224,
+      2248,
+      1747
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/46/术前/2.png": [
+      932,
+      290,
+      2425,
+      1783
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/46/术前/3.png": [
+      417,
+      138,
+      2057,
+      1778
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/46/术前/4.png": [
+      1000,
+      348,
+      2463,
+      1811
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/46/术前/5.png": [
+      598,
+      245,
+      2046,
+      1693
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/46/术前/6.png": [
+      787,
+      472,
+      2144,
+      1829
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/47/术前/1.png": [
+      794,
+      351,
+      2220,
+      1777
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/47/术前/2.png": [
+      1002,
+      380,
+      2306,
+      1684
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/47/术前/3.png": [
+      674,
+      467,
+      1919,
+      1712
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/47/术前/4.png": [
+      994,
+      402,
+      2281,
+      1689
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/47/术前/5.png": [
+      706,
+      414,
+      1960,
+      1668
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/47/术前/6.png": [
+      1019,
+      698,
+      2005,
+      1684
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/48/术前/1.png": [
+      1116,
+      560,
+      2273,
+      1717
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/48/术前/2.png": [
+      900,
+      339,
+      2288,
+      1727
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/48/术前/3.png": [
+      894,
+      513,
+      2248,
+      1867
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/48/术前/4.png": [
+      948,
+      494,
+      2215,
+      1761
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/48/术前/5.png": [
+      845,
+      441,
+      2273,
+      1869
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/48/术前/6.png": [
+      1024,
+      705,
+      1972,
+      1653
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/49/术前/1.png": [
+      200,
+      738,
+      1680,
+      2218
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/49/术前/2.png": [
+      278,
+      375,
+      1966,
+      2063
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/49/术前/3.png": [
+      145,
+      740,
+      1807,
+      2402
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/49/术前/4.png": [
+      238,
+      686,
+      1938,
+      2386
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/49/术前/5.png": [
+      0,
+      346,
+      1862,
+      2208
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/49/术前/6.png": [
+      365,
+      832,
+      1630,
+      2097
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/52/术前/1.png": [
+      905,
+      513,
+      2137,
+      1745
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/52/术前/2.png": [
+      1089,
+      389,
+      2431,
+      1731
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/52/术前/3.png": [
+      578,
+      382,
+      2021,
+      1825
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/52/术前/4.png": [
+      1062,
+      450,
+      2312,
+      1700
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/52/术前/5.png": [
+      671,
+      443,
+      2014,
+      1786
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/52/术前/6.png": [
+      1143,
+      743,
+      2006,
+      1606
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/56/术前/1.png": [
+      848,
+      423,
+      2145,
+      1720
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/56/术前/2.png": [
+      1014,
+      489,
+      2211,
+      1686
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/56/术前/3.png": [
+      458,
+      305,
+      1992,
+      1839
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/56/术前/4.png": [
+      877,
+      457,
+      2236,
+      1816
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/56/术前/5.png": [
+      756,
+      417,
+      2071,
+      1732
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/56/术前/6.png": [
+      880,
+      542,
+      2015,
+      1677
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/57/术前/1.png": [
+      990,
+      516,
+      1964,
+      1490
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/57/术前/2.png": [
+      708,
+      417,
+      1936,
+      1645
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/57/术前/3.png": [
+      926,
+      480,
+      2178,
+      1732
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/57/术前/4.png": [
+      876,
+      420,
+      1960,
+      1504
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/57/术前/5.png": [
+      1188,
+      423,
+      2388,
+      1623
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/57/术前/6.png": [
+      950,
+      500,
+      1877,
+      1427
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/58/术前/1.png": [
+      862,
+      366,
+      2150,
+      1654
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/58/术前/2.png": [
+      982,
+      383,
+      2366,
+      1767
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/58/术前/3.png": [
+      716,
+      308,
+      2056,
+      1648
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/58/术前/4.png": [
+      962,
+      272,
+      2435,
+      1745
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/58/术前/5.png": [
+      711,
+      422,
+      2053,
+      1764
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/58/术前/6.png": [
+      947,
+      578,
+      2038,
+      1669
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/59/术前/1.png": [
+      856,
+      391,
+      2191,
+      1726
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/59/术前/2.png": [
+      990,
+      407,
+      2301,
+      1718
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/59/术前/3.png": [
+      562,
+      402,
+      1858,
+      1698
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/59/术前/4.png": [
+      1014,
+      381,
+      2298,
+      1665
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/59/术前/5.png": [
+      664,
+      343,
+      1976,
+      1655
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/59/术前/6.png": [
+      911,
+      558,
+      1980,
+      1627
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/6/术前/1.png": [
+      952,
+      480,
+      2206,
+      1734
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/6/术前/2.png": [
+      1082,
+      482,
+      2294,
+      1694
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/6/术前/3.png": [
+      638,
+      399,
+      1967,
+      1728
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/6/术前/4.png": [
+      1112,
+      450,
+      2399,
+      1737
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/6/术前/5.png": [
+      670,
+      464,
+      2015,
+      1809
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/6/术前/6.png": [
+      1031,
+      680,
+      1980,
+      1629
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/60/术前/1.png": [
+      924,
+      405,
+      2158,
+      1639
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/60/术前/2.png": [
+      1042,
+      389,
+      2457,
+      1804
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/60/术前/3.png": [
+      614,
+      397,
+      1928,
+      1711
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/60/术前/4.png": [
+      906,
+      363,
+      2291,
+      1748
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/60/术前/5.png": [
+      538,
+      366,
+      2061,
+      1889
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/60/术前/6.png": [
+      971,
+      644,
+      1995,
+      1668
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/61/术前/1.png": [
+      860,
+      415,
+      2129,
+      1684
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/61/术前/2.png": [
+      1066,
+      420,
+      2326,
+      1680
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/61/术前/3.png": [
+      472,
+      278,
+      1972,
+      1778
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/61/术前/4.png": [
+      982,
+      406,
+      2341,
+      1765
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/61/术前/5.png": [
+      468,
+      288,
+      2012,
+      1832
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/61/术前/6.png": [
+      1024,
+      694,
+      1973,
+      1643
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/62/术前/1.png": [
+      756,
+      299,
+      2219,
+      1762
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/62/术前/2.png": [
+      1037,
+      420,
+      2428,
+      1811
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/62/术前/3.png": [
+      738,
+      457,
+      2135,
+      1854
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/62/术前/4.png": [
+      1050,
+      448,
+      2415,
+      1813
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/62/术前/5.png": [
+      724,
+      481,
+      2131,
+      1888
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/62/术前/6.png": [
+      984,
+      566,
+      2234,
+      1816
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/63/术前/1.png": [
+      706,
+      354,
+      2154,
+      1802
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/63/术前/2.png": [
+      988,
+      259,
+      2451,
+      1722
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/63/术前/3.png": [
+      578,
+      376,
+      1966,
+      1764
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/63/术前/4.png": [
+      852,
+      341,
+      2266,
+      1755
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/63/术前/5.png": [
+      700,
+      474,
+      2011,
+      1785
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/63/术前/6.png": [
+      916,
+      618,
+      2072,
+      1774
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/64/术前/1.png": [
+      798,
+      376,
+      2310,
+      1888
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/64/术前/2.png": [
+      873,
+      389,
+      2243,
+      1759
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/64/术前/3.png": [
+      758,
+      430,
+      2160,
+      1832
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/64/术前/4.png": [
+      742,
+      490,
+      2136,
+      1884
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/64/术前/5.png": [
+      703,
+      345,
+      2237,
+      1879
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/64/术前/6.png": [
+      923,
+      532,
+      2088,
+      1697
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/65/术前/1.png": [
+      791,
+      365,
+      2176,
+      1750
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/65/术前/2.png": [
+      914,
+      254,
+      2530,
+      1870
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/65/术前/3.png": [
+      526,
+      424,
+      1982,
+      1880
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/65/术前/4.png": [
+      868,
+      355,
+      2332,
+      1819
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/65/术前/5.png": [
+      674,
+      471,
+      2015,
+      1812
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/65/术前/6.png": [
+      978,
+      645,
+      2070,
+      1737
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/67/术前/1.png": [
+      764,
+      275,
+      2194,
+      1705
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/67/术前/2.png": [
+      1025,
+      282,
+      2546,
+      1803
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/67/术前/3.png": [
+      436,
+      269,
+      2004,
+      1837
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/67/术前/4.png": [
+      940,
+      363,
+      2359,
+      1782
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/67/术前/5.png": [
+      690,
+      478,
+      2008,
+      1796
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/67/术前/6.png": [
+      950,
+      483,
+      2034,
+      1567
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/68/术前/1.png": [
+      651,
+      142,
+      2258,
+      1749
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/68/术前/2.png": [
+      953,
+      291,
+      2519,
+      1857
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/68/术前/3.png": [
+      468,
+      376,
+      1985,
+      1893
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/68/术前/4.png": [
+      924,
+      407,
+      2389,
+      1872
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/68/术前/5.png": [
+      766,
+      498,
+      2038,
+      1770
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/68/术前/6.png": [
+      876,
+      509,
+      2106,
+      1739
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/69/术前/1.png": [
+      748,
+      365,
+      2215,
+      1832
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/69/术前/2.png": [
+      1072,
+      302,
+      2537,
+      1767
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/69/术前/3.png": [
+      624,
+      351,
+      2021,
+      1748
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/69/术前/4.png": [
+      984,
+      369,
+      2422,
+      1807
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/69/术前/5.png": [
+      551,
+      274,
+      2106,
+      1829
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/69/术前/6.png": [
+      914,
+      534,
+      2059,
+      1679
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/7/术前/1.png": [
+      782,
+      336,
+      2202,
+      1756
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/7/术前/2.png": [
+      1062,
+      446,
+      2218,
+      1602
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/7/术前/3.png": [
+      834,
+      461,
+      2026,
+      1653
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/7/术前/4.png": [
+      980,
+      579,
+      2070,
+      1669
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/7/术前/5.png": [
+      860,
+      492,
+      2044,
+      1676
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/7/术前/6.png": [
+      886,
+      470,
+      2130,
+      1714
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/70/术前/1.png": [
+      792,
+      324,
+      2199,
+      1731
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/70/术前/2.png": [
+      993,
+      288,
+      2463,
+      1758
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/70/术前/3.png": [
+      646,
+      374,
+      2035,
+      1763
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/70/术前/4.png": [
+      956,
+      441,
+      2282,
+      1767
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/70/术前/5.png": [
+      592,
+      410,
+      2028,
+      1846
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/70/术前/6.png": [
+      948,
+      569,
+      2065,
+      1686
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/71/术前/1.png": [
+      921,
+      547,
+      2021,
+      1647
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/71/术前/2.png": [
+      1047,
+      361,
+      2408,
+      1722
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/71/术前/3.png": [
+      592,
+      385,
+      2006,
+      1799
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/71/术前/4.png": [
+      1010,
+      447,
+      2303,
+      1740
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/71/术前/5.png": [
+      629,
+      524,
+      1934,
+      1829
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/71/术前/6.png": [
+      1066,
+      620,
+      2054,
+      1608
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/73/术前/1.png": [
+      974,
+      541,
+      2025,
+      1592
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/73/术前/2.png": [
+      989,
+      362,
+      2384,
+      1757
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/73/术前/3.png": [
+      664,
+      412,
+      1923,
+      1671
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/73/术前/4.png": [
+      1050,
+      416,
+      2419,
+      1785
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/73/术前/5.png": [
+      712,
+      467,
+      1924,
+      1679
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/73/术前/6.png": [
+      1073,
+      754,
+      1951,
+      1632
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/74/术前/1.png": [
+      1092,
+      408,
+      3159,
+      2475
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/74/术前/2.png": [
+      1072,
+      520,
+      2979,
+      2427
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/74/术前/3.png": [
+      1245,
+      558,
+      3003,
+      2316
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/74/术前/4.png": [
+      1387,
+      489,
+      3073,
+      2175
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/74/术前/5.png": [
+      1300,
+      395,
+      2879,
+      1974
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/74/术前/6.png": [
+      1431,
+      915,
+      2839,
+      2323
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/76/术前/1.png": [
+      940,
+      537,
+      1992,
+      1589
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/76/术前/2.png": [
+      1026,
+      472,
+      2319,
+      1765
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/76/术前/3.png": [
+      501,
+      406,
+      1902,
+      1807
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/76/术前/4.png": [
+      945,
+      539,
+      2308,
+      1902
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/76/术前/5.png": [
+      584,
+      424,
+      1998,
+      1838
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/76/术前/6.png": [
+      1050,
+      695,
+      1976,
+      1621
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/77/术前/1.png": [
+      750,
+      303,
+      2177,
+      1730
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/77/术前/2.png": [
+      948,
+      371,
+      2308,
+      1731
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/77/术前/3.png": [
+      460,
+      274,
+      2109,
+      1923
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/77/术前/4.png": [
+      932,
+      372,
+      2317,
+      1757
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/77/术前/5.png": [
+      614,
+      352,
+      2071,
+      1809
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/77/术前/6.png": [
+      1025,
+      692,
+      1942,
+      1609
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/78/术前/1.png": [
+      872,
+      447,
+      2153,
+      1728
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/78/术前/2.png": [
+      967,
+      400,
+      2220,
+      1653
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/78/术前/3.png": [
+      748,
+      483,
+      2006,
+      1741
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/78/术前/4.png": [
+      976,
+      528,
+      2142,
+      1694
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/78/术前/5.png": [
+      768,
+      399,
+      2106,
+      1737
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/78/术前/6.png": [
+      945,
+      626,
+      2014,
+      1695
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/8/术前/1.png": [
+      802,
+      342,
+      2200,
+      1740
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/8/术前/2.png": [
+      1012,
+      447,
+      2344,
+      1779
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/8/术前/3.png": [
+      698,
+      464,
+      2006,
+      1772
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/8/术前/4.png": [
+      921,
+      349,
+      2284,
+      1712
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/8/术前/5.png": [
+      822,
+      451,
+      2110,
+      1739
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/8/术前/6.png": [
+      914,
+      566,
+      1996,
+      1648
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/80/术前/1.png": [
+      758,
+      348,
+      2287,
+      1877
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/80/术前/2.png": [
+      946,
+      491,
+      2282,
+      1827
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/80/术前/3.png": [
+      748,
+      568,
+      2001,
+      1821
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/80/术前/4.png": [
+      1036,
+      516,
+      2309,
+      1789
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/80/术前/5.png": [
+      774,
+      516,
+      2024,
+      1766
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/80/术前/6.png": [
+      1059,
+      622,
+      2051,
+      1614
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/81/术前/1.png": [
+      826,
+      446,
+      2056,
+      1676
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/81/术前/2.png": [
+      1000,
+      387,
+      2305,
+      1692
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/81/术前/3.png": [
+      572,
+      422,
+      1959,
+      1809
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/81/术前/4.png": [
+      986,
+      471,
+      2259,
+      1744
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/81/术前/5.png": [
+      633,
+      345,
+      2077,
+      1789
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/81/术前/6.png": [
+      1033,
+      674,
+      1970,
+      1611
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/82/术前/1.png": [
+      759,
+      338,
+      2240,
+      1819
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/82/术前/2.png": [
+      1020,
+      411,
+      2331,
+      1722
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/82/术前/3.png": [
+      726,
+      434,
+      2069,
+      1777
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/82/术前/4.png": [
+      905,
+      481,
+      2187,
+      1763
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/82/术前/5.png": [
+      729,
+      436,
+      2029,
+      1736
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/82/术前/6.png": [
+      947,
+      561,
+      2008,
+      1622
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/83/术前/1.png": [
+      1012,
+      612,
+      2143,
+      1743
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/83/术前/2.png": [
+      1054,
+      455,
+      2327,
+      1728
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/83/术前/3.png": [
+      733,
+      508,
+      1935,
+      1710
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/83/术前/4.png": [
+      1028,
+      527,
+      2205,
+      1704
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/83/术前/5.png": [
+      718,
+      580,
+      1966,
+      1828
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/83/术前/6.png": [
+      1028,
+      656,
+      1982,
+      1610
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/84/术前/1.png": [
+      824,
+      325,
+      2205,
+      1706
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/84/术前/2.png": [
+      1038,
+      420,
+      2296,
+      1678
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/84/术前/3.png": [
+      698,
+      372,
+      2038,
+      1712
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/84/术前/4.png": [
+      1014,
+      469,
+      2262,
+      1717
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/84/术前/5.png": [
+      738,
+      455,
+      2011,
+      1728
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/84/术前/6.png": [
+      983,
+      650,
+      1964,
+      1631
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/87/术前/1.png": [
+      870,
+      412,
+      2151,
+      1693
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/87/术前/2.png": [
+      1024,
+      496,
+      2241,
+      1713
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/87/术前/3.png": [
+      714,
+      483,
+      1883,
+      1652
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/87/术前/4.png": [
+      900,
+      454,
+      2093,
+      1647
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/87/术前/5.png": [
+      758,
+      437,
+      1954,
+      1633
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/87/术前/6.png": [
+      1061,
+      724,
+      1997,
+      1660
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/88/术前/1.png": [
+      265,
+      598,
+      2817,
+      3150
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/88/术前/2.png": [
+      294,
+      780,
+      2859,
+      3345
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/88/术前/3.png": [
+      587,
+      953,
+      2885,
+      3251
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/88/术前/4.png": [
+      0,
+      485,
+      2758,
+      3243
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/88/术前/5.png": [
+      477,
+      529,
+      3072,
+      3124
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/88/术前/6.png": [
+      360,
+      605,
+      2553,
+      2798
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/89/术前/1.png": [
+      810,
+      409,
+      2243,
+      1842
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/89/术前/2.png": [
+      643,
+      426,
+      2094,
+      1877
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/89/术前/3.png": [
+      1100,
+      491,
+      2546,
+      1937
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/89/术前/4.png": [
+      316,
+      405,
+      1909,
+      1998
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/89/术前/5.png": [
+      1160,
+      473,
+      2585,
+      1898
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/89/术前/6.png": [
+      1023,
+      460,
+      2028,
+      1465
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/9/术前/1.png": [
+      766,
+      356,
+      2148,
+      1738
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/9/术前/2.png": [
+      1002,
+      386,
+      2348,
+      1732
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/9/术前/3.png": [
+      714,
+      386,
+      1995,
+      1667
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/9/术前/4.png": [
+      990,
+      411,
+      2318,
+      1739
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/9/术前/5.png": [
+      758,
+      450,
+      1991,
+      1683
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/9/术前/6.png": [
+      887,
+      556,
+      2060,
+      1729
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/90/术前/1.png": [
+      813,
+      435,
+      2204,
+      1826
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/90/术前/2.png": [
+      1072,
+      394,
+      2349,
+      1671
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/90/术前/3.png": [
+      719,
+      489,
+      1908,
+      1678
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/90/术前/4.png": [
+      1049,
+      371,
+      2466,
+      1788
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/90/术前/5.png": [
+      651,
+      566,
+      1917,
+      1832
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/90/术前/6.png": [
+      951,
+      536,
+      2098,
+      1683
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/91/术前/1.png": [
+      820,
+      458,
+      2114,
+      1752
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/91/术前/2.png": [
+      892,
+      500,
+      2133,
+      1741
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/91/术前/3.png": [
+      939,
+      438,
+      2273,
+      1772
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/91/术前/4.png": [
+      1026,
+      546,
+      2218,
+      1738
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/91/术前/5.png": [
+      1106,
+      527,
+      2344,
+      1765
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/91/术前/6.png": [
+      1070,
+      671,
+      1990,
+      1591
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/93/术前/1.png": [
+      828,
+      316,
+      2214,
+      1702
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/93/术前/2.png": [
+      1039,
+      497,
+      2239,
+      1697
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/93/术前/3.png": [
+      759,
+      506,
+      1883,
+      1630
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/93/术前/4.png": [
+      1004,
+      488,
+      2193,
+      1677
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/93/术前/5.png": [
+      796,
+      545,
+      1945,
+      1694
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/93/术前/6.png": [
+      963,
+      590,
+      2087,
+      1714
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/94/术前/1.png": [
+      764,
+      239,
+      2209,
+      1684
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/94/术前/2.png": [
+      994,
+      339,
+      2440,
+      1785
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/94/术前/3.png": [
+      498,
+      166,
+      2126,
+      1794
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/94/术前/4.png": [
+      915,
+      428,
+      2392,
+      1905
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/94/术前/5.png": [
+      540,
+      271,
+      2117,
+      1848
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/94/术前/6.png": [
+      899,
+      640,
+      1996,
+      1737
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/95/术前/1.png": [
+      802,
+      385,
+      2132,
+      1715
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/95/术前/2.png": [
+      933,
+      411,
+      2259,
+      1737
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/95/术前/3.png": [
+      653,
+      442,
+      1883,
+      1672
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/95/术前/4.png": [
+      884,
+      374,
+      2114,
+      1604
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/95/术前/5.png": [
+      795,
+      377,
+      1948,
+      1530
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/95/术前/6.png": [
+      1006,
+      724,
+      1906,
+      1624
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/96/术前/1.png": [
+      834,
+      399,
+      2098,
+      1663
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/96/术前/2.png": [
+      976,
+      487,
+      2242,
+      1753
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/96/术前/3.png": [
+      687,
+      478,
+      1962,
+      1753
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/96/术前/4.png": [
+      948,
+      504,
+      2164,
+      1720
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/96/术前/5.png": [
+      734,
+      409,
+      2012,
+      1687
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/96/术前/6.png": [
+      1035,
+      726,
+      1920,
+      1611
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/98/术前/1.png": [
+      838,
+      454,
+      2162,
+      1778
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/98/术前/2.png": [
+      887,
+      365,
+      2300,
+      1778
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/98/术前/3.png": [
+      527,
+      366,
+      1932,
+      1771
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/98/术前/4.png": [
+      810,
+      350,
+      2174,
+      1714
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/98/术前/5.png": [
+      756,
+      392,
+      2086,
+      1722
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/98/术前/6.png": [
+      935,
+      534,
+      1996,
+      1595
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/99/术前/1.png": [
+      865,
+      442,
+      2136,
+      1713
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/99/术前/2.png": [
+      1034,
+      411,
+      2287,
+      1664
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/99/术前/3.png": [
+      723,
+      475,
+      1982,
+      1734
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/99/术前/4.png": [
+      1046,
+      482,
+      2252,
+      1688
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/99/术前/5.png": [
+      834,
+      443,
+      2044,
+      1653
+    ],
+    "/root/autodl-tmp/deformity_dataset/Train/masks/parts/face/99/术前/6.png": [
+      1034,
+      672,
+      1976,
+      1614
+    ]
+  }
+}

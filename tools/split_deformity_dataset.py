@@ -2,7 +2,7 @@
 Build a unified train/test/feature-test dataset from masked deformity images and masks.
 
 Default output:
-  ~/deformity_dataset/
+  <project>/Image_output/deformity_dataset/
     Train/
       images/<case>/<stage>/<view>.<ext>
       masks/inpaint_mask/<case>/<stage>/<view>.png
@@ -37,6 +37,8 @@ MASK_GROUPS = (
     ("parts/nose", ("parts", "nose")),
     ("parts/mouth", ("parts", "mouth")),
 )
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+IMAGE_OUTPUT_ROOT = PROJECT_ROOT / "Image_output"
 EXCLUDED_CASES = {"165"}
 MODEL_TEST_CASES = {"14", "16", "79", "148", "150", "161"}
 MISSING_VIEW_FEATURE_CASES = {"50", "97", "150", "184", "185"}
@@ -212,9 +214,9 @@ def build_dataset(
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Build unified Train/Test/Feature_test deformity dataset.")
-    parser.add_argument("--masked-root", type=Path, default=Path("~/deformity_masked"))
-    parser.add_argument("--mask-root", type=Path, default=Path("~/deformity_sam_mask"))
-    parser.add_argument("--output-root", type=Path, default=Path("~/deformity_dataset"))
+    parser.add_argument("--masked-root", type=Path, default=IMAGE_OUTPUT_ROOT / "detection" / "masked")
+    parser.add_argument("--mask-root", type=Path, default=IMAGE_OUTPUT_ROOT / "detection" / "sam_mask")
+    parser.add_argument("--output-root", type=Path, default=IMAGE_OUTPUT_ROOT / "deformity_dataset")
     parser.add_argument("--copy", action="store_true", help="Copy files instead of creating symlinks.")
     args = parser.parse_args()
 

@@ -23,16 +23,18 @@
 
 ## 推荐阅读顺序
 
-1. `baseline_report.md`
+1. 2026-04-11 - `baseline_report.md`
    - 看总目标、阶段划分、长期路线
    - 这是项目的冻结基线
-2. `detection_report.md`
+2. 2026-04-04 - `detection_report.md`
    - 看 detection 侧是怎么从“眼部打码脚本”演化成“多检测器 + SAM 条件构建”的
    - 重点是检测逻辑、模型选择思路、阶段A的实验结论
-3. `generation_report.md`
+3. 2026-04-05，2026-07-04 修订 - `generation_report.md`
    - 看 generation 侧是怎么接上 detection 产物的
    - 重点是训练逻辑、paired/unpaired 视角利用方式、推理与评估思路
-4. 后续报告
+4. 2026-07-05 - `lora_training_report.md`
+   - 看当前 LoRA 训练计划、IP-Adapter 多视角条件、fp16/bf16 稳定性，以及 800-step IP-Adapter 条件训练失败复盘
+5. 后续报告
    - 按时间递增阅读
    - 优先关注“为什么这么改”“当前方案解决了什么问题”“还保留了哪些升级口”
 

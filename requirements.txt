@@ -32,7 +32,7 @@ gdown>=5.2,<6.0
 # SAM（RUN_MODE=sam_mask）
 # 若 git 网络慢，可按 detection/README.md 用 zip 本地安装 MobileSAM。
 timm>=0.9,<1.1
-git+https://github.com/ChaoningZhang/MobileSAM.git
+# git+https://github.com/ChaoningZhang/MobileSAM.git
 
 # SDXL 生成侧（generation_pipeline.py）
 diffusers>=0.31,<0.36

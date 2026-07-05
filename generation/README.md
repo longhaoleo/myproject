@@ -59,15 +59,18 @@ SAM 部位 mask 沿用 `detection/sam_mask.py` 的输出：
 负责：
 
 1. 运行时直接从 detection 输出构建 manifest，并按 `case_id` 进行 train / val / test 切分
-2. 当前 baseline 只使用 `术后` 样本
-3. 每个训练样本统一构造成 `post_face_inpaint`
-   - `condition_image`：术后图的正方形 `face` crop
-   - `target_image`：同一张术后图的正方形 `face` crop
-   - `mask`：同一张术后图的连续鼻嘴 `inpaint_mask`
-4. 训练时在同一张 face crop 里把鼻嘴区域挖空，让模型学习补回术后鼻嘴
-5. face crop 和 mask crop 直接 resize 到训练分辨率，不再用额外 padding
-6. 术前图、术前到术后配对监督、多视角参考和缺视角利用先作为后续工作
-7. 落盘 checkpoint、最终 LoRA 权重和训练摘要
+2. 当前 baseline 只使用同病例同视角 paired 样本
+3. 每个训练样本统一构造成 `pre_to_post_inpaint`
+   - `condition_image`：术前图的正方形 `face` crop
+   - `target_image`：同视角术后图的正方形 `face` crop
+   - `mask`：术前图的连续鼻嘴 `inpaint_mask`
+4. 默认训练时加载冻结的 IP-Adapter，把同病例术前最多 6 个视角 face crop 作为 reference 条件
+5. 训练时在术前 face crop 里把鼻嘴区域挖空，mask 外保留术前上下文，让模型学习在当前人脸和多视角参考条件下重绘术后鼻嘴
+6. face crop 和 mask crop 直接 resize 到训练分辨率，不再用额外 padding
+7. 默认使用 `fp16` 和 UNet gradient checkpointing，降低显存和权重占用
+8. face mask bbox 会缓存到 `summaries/mask_bbox_cache.json`，首次构造较慢，后续基本秒开
+9. 缺视角利用先作为后续工作
+10. 落盘 checkpoint、最终 LoRA 权重和训练摘要
 
 #### `infer`
 
@@ -78,6 +81,7 @@ SAM 部位 mask 沿用 `detection/sam_mask.py` 的输出：
 -> detection 生成的眼部打码图（主输入）
 -> detection 生成的连续鼻嘴 inpaint mask
 -> face crop
+-> 可选：同病例术前 6 视角 face crop 作为 IP-Adapter reference
 -> SDXL Inpainting + LoRA
 -> 映射回整图
 -> 仅按羽化 mask 回贴鼻嘴联合区域
@@ -89,6 +93,7 @@ SAM 部位 mask 沿用 `detection/sam_mask.py` 的输出：
 ```text
 + depth 条件图
 + ControlNet-Depth
++ IP-Adapter reference：同病例术前多视角图，默认最多 6 张
 ```
 
 #### `evaluate`
@@ -115,9 +120,9 @@ SAM 部位 mask 沿用 `detection/sam_mask.py` 的输出：
 
 说明：
 
-1. 当前训练 baseline 先验证术后 face crop 内的鼻嘴 inpainting 能否稳定学会
+1. 当前训练 baseline 先验证术前锚点 paired inpainting 能否稳定学会
 2. 评估阶段通过 `hard_identity_similarity` 和 `soft_face_similarity` 做轻量验收
-3. 术前参考、多视角一致性和显式 identity / perceptual consistency loss 都放到后续版本
+3. 多视角一致性和显式 identity / perceptual consistency loss 都放到后续版本
 
 ## 2. 依赖安装
 
@@ -157,6 +162,7 @@ python -m pip install -r requirements.txt
 - LoRA 训练底模：`diffusers/stable-diffusion-xl-1.0-inpainting-0.1`
 - Inpainting 底模：`diffusers/stable-diffusion-xl-1.0-inpainting-0.1`
 - ControlNet-Depth（可选）：`diffusers/controlnet-depth-sdxl-1.0`
+- IP-Adapter（可选）：默认本地目录 `model/generation/ip-adapter`，来源 repo 为 `h94/IP-Adapter`
 - Depth 模型（可选）：`Intel/dpt-hybrid-midas`
 
 说明：
@@ -196,6 +202,13 @@ huggingface-cli download diffusers/stable-diffusion-xl-1.0-inpainting-0.1 \
 huggingface-cli download diffusers/controlnet-depth-sdxl-1.0 \
   --local-dir model/generation/controlnet-depth-sdxl
 
+hf download h94/IP-Adapter \
+  sdxl_models/image_encoder/config.json \
+  sdxl_models/image_encoder/model.safetensors \
+  sdxl_models/ip-adapter-plus-face_sdxl_vit-h.safetensors \
+  --local-dir model/generation/ip-adapter \
+  --max-workers 1
+
 huggingface-cli download Intel/dpt-hybrid-midas \
   --local-dir model/generation/dpt-hybrid-midas
 ```
@@ -205,8 +218,48 @@ huggingface-cli download Intel/dpt-hybrid-midas \
 - `LoRATrainConfig.base_model_id`
 - `InferenceConfig.base_model_id`
 - `InferenceConfig.controlnet_model_id`
+- `InferenceConfig.ip_adapter_model_id`
 
-### 3.4 FP8 推理配置
+### 3.4 IP-Adapter 多视角参考
+
+推理侧可以开启 IP-Adapter，把同病例术前最多 6 个视角作为 reference：
+
+```text
+InferenceConfig.enable_ip_adapter = True
+InferenceConfig.ip_adapter_model_id = "model/generation/ip-adapter"
+InferenceConfig.ip_adapter_subfolder = "sdxl_models"
+InferenceConfig.ip_adapter_weight_name = "ip-adapter-plus-face_sdxl_vit-h.safetensors"
+InferenceConfig.ip_adapter_image_encoder_folder = "sdxl_models/image_encoder"
+InferenceConfig.ip_adapter_scale = 0.55
+InferenceConfig.ip_adapter_max_reference_images = 6
+```
+
+运行时会按 `case_id` 收集 `术前` 行，按视角排序，默认用每张图自己的 `face_mask` 裁成 face crop 后传给 IP-Adapter。这样当前视角仍由 SDXL inpainting 的 `image + mask` 控制，其他术前视角作为身份和脸部风格参考。
+
+训练脚本同样默认启用这个条件，但只训练 LoRA，不训练 IP-Adapter：
+
+```text
+ENABLE_IP_ADAPTER_CONDITION=1
+IP_ADAPTER_SCALE=0.55
+IP_ADAPTER_MAX_REFERENCE_IMAGES=6
+MIXED_PRECISION=fp16
+GRADIENT_CHECKPOINTING=1
+```
+
+也可以直接用脚本跑 `Feature_test`：
+
+```bash
+tools/run_infer_feature_test_ip_adapter.sh
+```
+
+常用覆盖项：
+
+```bash
+MAX_SAMPLES=6 STRENGTH=0.60 IP_ADAPTER_SCALE=0.55 \
+tools/run_infer_feature_test_ip_adapter.sh
+```
+
+### 3.5 FP8 推理配置
 
 当前代码已经在 [generation/infer.py](infer.py) 支持 `from_pretrained(...)` 直接挂量化配置。
 
@@ -294,6 +347,7 @@ eval/
 
 summaries/
 ├── manifest.jsonl
+├── mask_bbox_cache.json
 ├── train_lora_summary.json
 ├── infer_summary.json
 └── evaluate_summary.json
@@ -302,7 +356,7 @@ summaries/
 ## 6. 当前限制
 
 1. v1 只训练 LoRA，不训练自定义 ControlNet。
-2. 默认不接 IP-Adapter。
-3. 当前训练侧是“术后 face crop inpainting 自监督 baseline”，优先验证 crop/mask/LoRA 链路，而不是先做术前到术后的完整预测 recipe。
+2. IP-Adapter 是冻结参考条件；当前 LoRA 训练侧会使用它的多视角条件，但不训练 IP-Adapter 权重。
+3. 当前训练侧是“术前锚点 paired inpainting baseline”，优先验证 crop/mask/LoRA 链路，再逐步加入更强的身份约束。
 4. 当前默认不启用 depth；如果后续重新打开，depth 生成支持 `transformers` 和 `opencv-luma fallback` 两条路。
-5. 当前 `FP8` 支持只接在推理侧；训练侧仍是常规精度加载。
+5. 当前 `FP8` 支持只接在推理侧；训练侧默认使用 `fp16`，并把保存的 LoRA 权重转成 `fp16`。

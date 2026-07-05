@@ -7,21 +7,31 @@
 
 ## 推荐阅读顺序
 
-1. [report_000.md](/Users/leo/myproject/log/report_000.md)
+1. 2026-04-11 - [report_000.md](report_000.md)
    - 项目基线
    - 当前主路线
    - 方法论
    - 报告书写约定
 
-2. [report_001.md](/Users/leo/myproject/log/report_001.md)
+2. 2026-04-11 - [report_001.md](report_001.md)
    - detection 阶段总结
    - 多检测器、打码、SAM 条件构建
    - 主要尝试、效果和阶段性结论
 
-3. [report_002.md](/Users/leo/myproject/log/report_002.md)
+3. 2026-04-11，2026-07-04 修订 - [report_002.md](report_002.md)
    - generation 阶段总结
    - 训练、推理、评估主链
    - 小样本、缺视角、多视角一致性的当前方案
+
+4. 2026-07-05 - [report_003.md](report_003.md)
+   - 800-step SDXL Inpainting LoRA 失败复盘
+   - 贴片、黑边、局部换脸感的原因分析
+   - 下一轮修复顺序：先修 inpainting 协议，再谈 rank 和步数
+
+5. 2026-07-05 - [report_004.md](report_004.md)
+   - 800-step LoRA 训练效果观察
+   - 附 case sheet 和 preview 图片证据
+   - 结论：训练流程跑通，但视觉效果不可用
 
 ## 当前写法要求
 

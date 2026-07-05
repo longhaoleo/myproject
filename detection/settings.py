@@ -12,6 +12,14 @@ from pathlib import Path
 from typing import Any
 
 
+def _project_root() -> Path:
+    return Path(__file__).resolve().parents[1]
+
+
+def default_image_output_root() -> Path:
+    return Path(os.getenv("IMAGE_OUTPUT_ROOT", str(_project_root() / "Image_output"))).expanduser()
+
+
 @dataclass(frozen=True)
 class ProjectPaths:
     input_root: Path
@@ -175,20 +183,21 @@ def default_paths() -> ProjectPaths:
     - FD_OUTPUT_ROOT_SAM
     - FD_PREVIEW_ROOT_MASK
     """
+    image_output_root = default_image_output_root() / "detection"
     return ProjectPaths(
         input_root=Path(os.getenv("FD_INPUT_ROOT", "~/deformity")).expanduser(),
         model_dir=Path(os.getenv("FD_MODEL_DIR", "model")).expanduser(),
         output_root_detect=Path(
-            os.getenv("FD_OUTPUT_ROOT_DETECT", "~/deformity_face_detection_preview")
+            os.getenv("FD_OUTPUT_ROOT_DETECT", str(image_output_root / "face_detection_preview"))
         ).expanduser(),
         output_root_mask=Path(
-            os.getenv("FD_OUTPUT_ROOT_MASK", "~/deformity_masked")
+            os.getenv("FD_OUTPUT_ROOT_MASK", str(image_output_root / "masked"))
         ).expanduser(),
         output_root_sam=Path(
-            os.getenv("FD_OUTPUT_ROOT_SAM", "~/deformity_sam_mask")
+            os.getenv("FD_OUTPUT_ROOT_SAM", str(image_output_root / "sam_mask"))
         ).expanduser(),
         preview_root_mask=Path(
-            os.getenv("FD_PREVIEW_ROOT_MASK", "~/deformity_detection_preview")
+            os.getenv("FD_PREVIEW_ROOT_MASK", str(image_output_root / "detection_preview"))
         ).expanduser(),
     )
 

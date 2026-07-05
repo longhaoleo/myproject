@@ -10,7 +10,12 @@ import numpy as np
 
 from generation.eval import run_evaluation
 from generation.index import build_generation_manifest
-from generation.infer import _generator_seed, _normalized_quant_components
+from generation.infer import (
+    _generator_seed,
+    _load_ip_adapter_reference_images,
+    _normalized_quant_components,
+    _pre_reference_rows_by_case,
+)
 from generation.settings import GenerationPaths, InferenceConfig, LoRATrainConfig
 from generation.train import _build_training_samples
 
@@ -159,19 +164,53 @@ class GenerationPipelineTest(unittest.TestCase):
         self.assertEqual(_generator_seed(row_a, config, 0), _generator_seed(row_a, config, 9))
         self.assertNotEqual(_generator_seed(row_a, config, 0), _generator_seed(row_b, config, 0))
 
-    def test_training_samples_use_post_face_inpaint_baseline(self) -> None:
+    def test_training_samples_use_pre_to_post_inpaint_baseline(self) -> None:
         self._seed_case()
         rows = build_generation_manifest(paths=self.paths)
         samples = _build_training_samples(rows, self.paths, LoRATrainConfig())
-        self.assertEqual(len(samples), 3)
+        self.assertEqual(len(samples), 2)
         sample_types = [sample.sample_type for sample in samples]
-        self.assertEqual(sample_types.count("post_face_inpaint"), 3)
+        self.assertEqual(sample_types.count("pre_to_post_inpaint"), 2)
         for sample in samples:
             self.assertIn("/prepared/sanitized/", sample.condition_image_path)
-            self.assertIn("/术后/", sample.condition_image_path)
-            self.assertEqual(sample.condition_image_path, sample.target_image_path)
+            self.assertIn("/术前/", sample.condition_image_path)
+            self.assertIn("/术后/", sample.target_image_path)
             self.assertIn("/inpaint_mask/", sample.inpaint_mask_path)
+            self.assertIn("/术前/", sample.inpaint_mask_path)
             self.assertEqual(sample.crop_box, (8, 8, 56, 56))
+
+    def test_training_samples_can_include_ip_adapter_pre_references(self) -> None:
+        self._seed_case()
+        rows = build_generation_manifest(paths=self.paths)
+        samples = _build_training_samples(
+            rows,
+            self.paths,
+            LoRATrainConfig(enable_ip_adapter_condition=True, ip_adapter_max_reference_images=6),
+        )
+        self.assertEqual(len(samples), 2)
+        for sample in samples:
+            self.assertEqual(len(sample.ip_adapter_reference_image_paths), 3)
+            self.assertTrue(all("/术前/" in path for path in sample.ip_adapter_reference_image_paths))
+            self.assertEqual(sample.ip_adapter_reference_crop_boxes[0], (8, 8, 56, 56))
+
+    def test_ip_adapter_references_collect_pre_views_by_case(self) -> None:
+        self._seed_case()
+        rows = build_generation_manifest(paths=self.paths)
+        rows_by_case = _pre_reference_rows_by_case(rows)
+        self.assertEqual([row["view_id"] for row in rows_by_case["1"]], ["1", "2", "3"])
+
+        issues: list[dict[str, object]] = []
+        images = _load_ip_adapter_reference_images(
+            case_id="1",
+            reference_rows=rows_by_case["1"],
+            paths=self.paths,
+            config=InferenceConfig(enable_ip_adapter=True, ip_adapter_max_reference_images=6),
+            issues=issues,
+        )
+
+        self.assertEqual(len(images), 3)
+        self.assertFalse(issues)
+        self.assertEqual(images[0].size, (48, 48))
 
 
 if __name__ == "__main__":

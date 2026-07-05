@@ -1,6 +1,7 @@
 # 报告002：Generation 阶段实验总结
 
 日期：2026-04-11
+最新修订：2026-07-04
 
 ## 1. 当前状态与主线关系
 
@@ -18,8 +19,8 @@
 这一阶段要解决的问题是：
 
 1. 如何把 detection 侧条件真正接进训练与推理
-2. 如何在小样本下最大化利用 paired 和 unpaired 视角
-3. 如何在多视角下尽量稳住人物一致性
+2. 如何在小样本下稳定使用同病例同视角 `术前 -> 术后` 配对监督
+3. 如何用 `Feature_test` 固定检查真实术前/术后对比
 
 也就是说，generation 阶段不是“纯生成”，而是一个有明确条件输入和编辑区域约束的局部重绘过程。
 
@@ -41,7 +42,7 @@
 
 1. 编辑区域必须固定
 2. 条件图和推理输入分布必须一致
-3. 缺少真值的少量视角也要尽可能继续利用
+3. 当前先把 paired 监督跑稳，unpaired 视角暂不进入训练
 
 ## 4. 当前训练逻辑
 
@@ -81,30 +82,17 @@ manifest 每一行至少要回答这些问题：
 
 ### 4.3 训练样本构造
 
-当前固定三类训练样本：
+当前固定一种训练样本：
 
-1. `paired_head_reference`
-   - 条件图：术前 masked 图
-   - 目标图：同视角术后 masked 图
-   - 区域：`face_mask` 框内
-   - 作用：学习整体头面部、姿态和人物连续性
+1. `pre_to_post_inpaint`
+   - 触发条件：manifest 行属于 `train` split，且 `stage == 术后`
+   - 条件图：同病例同视角术前图，也就是 `paired_pre_path`
+   - 目标图：当前术后图
+   - 区域：当前术后图的 `face_mask` crop
+   - mask：当前术后图的鼻子 + 嘴巴 `inpaint_mask`
+   - 作用：学习同视角术前到术后的鼻嘴局部重绘
 
-2. `paired_edit_crop`
-   - 条件图：术前 masked 图
-   - 目标图：同视角术后 masked 图
-   - 区域：鼻子和嘴巴联合 crop
-   - mask：术前侧 `inpaint_mask`
-   - 作用：学习鼻嘴目标区域的风格重绘
-
-3. `self_identity_head`
-   - 条件图和目标图：同一张 masked 图
-   - 区域：`face_mask` 框内
-   - 作用：让少量缺配对视角继续贡献人物稳定信息
-
-换句话说：
-
-1. paired 视角负责真正的术前到术后监督
-2. unpaired 视角负责低权重身份保持
+换句话说，当前训练先只吃真实 paired 视角，不再生成旧方案里的 `paired_head_reference / paired_edit_crop / self_identity_head` 三类样本。
 
 ### 4.4 Dataset 输入输出
 
@@ -115,46 +103,38 @@ manifest 每一行至少要回答这些问题：
    - paired 时就是同视角术后图
 
 2. `mask_values`
-   - 来自术前侧 `inpaint_mask`
+   - 来自当前术后行的 `inpaint_mask`
    - 定义允许重绘的区域
 
 3. `masked_pixel_values`
    - 来自条件图
-   - 把编辑区域按 mask 挖空后的结果
+   - 当前实现是完整术前 face crop，不在像素侧把编辑区置零
 
 所以当前训练的 I/O 关系非常明确：
 
 1. 条件图：术前
 2. 目标图：术后
-3. mask：术前侧鼻嘴联合编辑区域
+3. mask：当前术后行的鼻嘴联合编辑区域
 
 ### 4.5 扩散训练本体
 
 当前训练本体仍然是标准 SDXL inpainting LoRA：
 
 1. 目标图编码成 latent
-2. 挖空后的条件图也编码成 latent
+2. 条件图编码成 latent
 3. mask 缩放到 latent 尺寸
 4. UNet 以 `noisy_latents + mask + masked_image_latents` 为输入
 5. 用标准噪声回归损失训练
 
-所以当前方案的“新意”主要在样本组织和条件设计，不在损失形式。
+所以当前方案的“新意”主要在样本组织和条件设计，不在损失形式。当前没有额外 masked-only loss，也没有显式 identity loss。
 
 ### 4.6 权重与顺序设计
 
-当前三类样本权重有明显分工：
+当前权重设计保持简单：
 
-1. `paired_head_reference`
-   - 标准权重
-   - 负责头面部整体稳定
-
-2. `paired_edit_crop`
-   - 更高权重
-   - 负责强化鼻嘴目标区域学习
-
-3. `self_identity_head`
-   - 更低权重
-   - 负责利用数据，不压过 paired 监督
+1. 所有 `pre_to_post_inpaint` 样本权重为 `1.0`
+2. 暂不区分整头部样本、鼻嘴局部强化样本和 unpaired 自重建样本
+3. 如果后续鼻嘴变化不足，再考虑 masked loss 或局部样本重加权
 
 此外当前还做了 grouped sampling：
 
@@ -205,9 +185,11 @@ manifest 每一行至少要回答这些问题：
 generation 侧已经经历过这些关键变化：
 
 1. 从术后单图自监督，切到术前锚点配对监督
-2. 从“只用 paired 视角”，切到“paired + 低权重 unpaired”
+2. 当前实现先收敛为单一 `pre_to_post_inpaint` paired 样本
 3. 从整图思路，切到 face crop 内 inpainting 再回贴
 4. 从只看单张输出，切到病例级多视角组织评估
+5. SDXL inpainting 底模已切到本地 fp16 权重
+6. 已跑通 20 step LoRA、`Test` 推理和 `Feature_test` 配对验证
 
 ## 8. 当前效果与阶段性结论
 
@@ -215,28 +197,31 @@ generation 侧已经经历过这些关键变化：
 
 1. detection 和 generation 的接口已经清晰
 2. 训练、推理、评估的输入输出逻辑已经打通
-3. 小样本下 paired/unpaired 数据都能被利用
-4. 多视角结果已经能按病例维度组织和检查
+3. `Train` 当前可构造 898 个 `pre_to_post_inpaint` 训练样本
+4. `Test` 29 张术前推理成功，但没有真实配对
+5. `Feature_test` 27 张术前推理成功，并生成 20 个真实配对 triptych
 
 当前阶段性结论是：
 
 1. v1 的关键价值在于样本组织方式，而不是复杂新损失
 2. detection 条件统一之后，generation 的问题更容易单独定位
-3. 当前方案已经足够支撑下一轮真正的生成质量验证
+3. 当前方案已经足够支撑 800 step 级别的小规模正式训练验证
 
 ## 9. 当前局限
 
 1. 当前仍然是轻量一致性方案，没有显式 identity loss
 2. 当前评估指标更偏工程验收，不是最终身份度量
 3. 当前 LoRA recipe 仍然是小样本可落地方案，不等于最终最优 recipe
-4. 真正的训练质量和推理效果还需要在完整环境中继续验证
+4. 20 step 只证明链路可用，不能代表最终效果
+5. 当前训练使用术后侧 mask/crop，推理使用术前侧 mask/crop，后续需要观察这点是否影响稳定性
 
 ## 10. 后续可能思路
 
-1. 继续细化 paired/unpaired 样本权重
+1. 先训练一版 800 step LoRA，并固定用 `Feature_test` 验证
 2. 继续验证 grouped sampling 是否足够，或是否要升级到联合视角损失
 3. 继续观察 face crop 与整图回贴的稳定性
 4. 后续再评估是否加入：
+   - masked loss 或鼻嘴局部重加权
    - 显式 identity / perceptual consistency loss
    - `ControlNet-Depth`
    - 病例级 reference 方案，如 `IP-Adapter`

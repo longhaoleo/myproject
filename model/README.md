@@ -24,6 +24,7 @@ model/
 ├── generation/
 │   ├── controlnet-depth-sdxl/
 │   ├── dpt-hybrid-midas/
+│   ├── ip-adapter/
 │   └── sdxl-inpaint/
 ├── mediapipe-landmarker/
 │   └── face_landmarker.task
@@ -59,6 +60,7 @@ mkdir -p \
   model/centerface \
   model/generation/controlnet-depth-sdxl \
   model/generation/dpt-hybrid-midas \
+  model/generation/ip-adapter \
   model/generation/sdxl-inpaint \
   model/mediapipe-landmarker \
   model/retinaface \
@@ -121,6 +123,15 @@ curl -L \
 .venv/bin/huggingface-cli download diffusers/controlnet-depth-sdxl-1.0 \
   --local-dir model/generation/controlnet-depth-sdxl
 
+# IP-Adapter for SDXL Inpainting reference images
+# 只下载当前推理需要的 SDXL face adapter 和 image encoder。
+.venv/bin/hf download h94/IP-Adapter \
+  sdxl_models/image_encoder/config.json \
+  sdxl_models/image_encoder/model.safetensors \
+  sdxl_models/ip-adapter-plus-face_sdxl_vit-h.safetensors \
+  --local-dir model/generation/ip-adapter \
+  --max-workers 1
+
 # Depth estimator, optional
 .venv/bin/huggingface-cli download Intel/dpt-hybrid-midas \
   --local-dir model/generation/dpt-hybrid-midas
@@ -172,6 +183,34 @@ diffusers/controlnet-depth-sdxl-1.0
 ```python
 base_model_id = "model/generation/sdxl-inpaint"
 controlnet_model_id = "model/generation/controlnet-depth-sdxl"
+ip_adapter_model_id = "model/generation/ip-adapter"
+```
+
+#### IP-Adapter
+
+推理侧默认从本地目录读取：
+
+```text
+model/generation/ip-adapter
+```
+
+需要的文件是：
+
+```text
+model/generation/ip-adapter/sdxl_models/image_encoder/config.json
+model/generation/ip-adapter/sdxl_models/image_encoder/model.safetensors
+model/generation/ip-adapter/sdxl_models/ip-adapter-plus-face_sdxl_vit-h.safetensors
+```
+
+如果下载中断，可以单独重跑：
+
+```bash
+.venv/bin/hf download h94/IP-Adapter \
+  sdxl_models/image_encoder/config.json \
+  sdxl_models/image_encoder/model.safetensors \
+  sdxl_models/ip-adapter-plus-face_sdxl_vit-h.safetensors \
+  --local-dir model/generation/ip-adapter \
+  --max-workers 1
 ```
 
 ### MTCNN
@@ -221,6 +260,8 @@ checks = [
     ("RetinaFace", Path("model/retinaface/retinaface.h5")),
     ("SDXL Inpaint", Path("model/generation/sdxl-inpaint/model_index.json")),
     ("ControlNet Depth", Path("model/generation/controlnet-depth-sdxl/config.json")),
+    ("IP-Adapter image encoder", Path("model/generation/ip-adapter/sdxl_models/image_encoder/model.safetensors")),
+    ("IP-Adapter face SDXL", Path("model/generation/ip-adapter/sdxl_models/ip-adapter-plus-face_sdxl_vit-h.safetensors")),
     ("DPT Hybrid MiDaS", Path("model/generation/dpt-hybrid-midas/config.json")),
 ]
 

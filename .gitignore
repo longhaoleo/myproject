@@ -8,7 +8,6 @@ env/
 myenv/
 
 .DS_Store
-*.log
 .codex
 
 model/*
@@ -17,3 +16,4 @@ model/*
 
 runs/
 output/
+# Image_output/

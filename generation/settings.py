@@ -15,7 +15,7 @@ import os
 from pathlib import Path
 from typing import Any, TypeVar
 
-from detection.settings import default_paths as default_face_paths
+from detection.settings import default_image_output_root, default_paths as default_face_paths
 
 
 T = TypeVar("T")
@@ -48,10 +48,11 @@ class LoRATrainConfig:
     """LoRA 训练配置。"""
 
     base_model_id: str = "diffusers/stable-diffusion-xl-1.0-inpainting-0.1"
+    base_model_variant: str = "fp16"
     resolution: int = 1024
     train_batch_size: int = 1
     gradient_accumulation_steps: int = 4
-    learning_rate: float = 1e-4
+    learning_rate: float = 5e-5
     num_train_epochs: int = 1
     max_train_steps: int = 200
     lr_scheduler: str = "constant"
@@ -60,10 +61,21 @@ class LoRATrainConfig:
     alpha: int = 16
     dropout: float = 0.0
     mixed_precision: str = "fp16"
+    max_grad_norm: float = 1.0
+    gradient_checkpointing: bool = True
     train_text_encoder: bool = False
     seed: int = 42
     save_every_steps: int = 100
+    log_every_steps: int = 10
     num_workers: int = 0
+    enable_ip_adapter_condition: bool = False
+    ip_adapter_model_id: str = str(Path(__file__).resolve().parents[1] / "model" / "generation" / "ip-adapter")
+    ip_adapter_subfolder: str = "sdxl_models"
+    ip_adapter_weight_name: str = "ip-adapter-plus-face_sdxl_vit-h.safetensors"
+    ip_adapter_image_encoder_folder: str = "sdxl_models/image_encoder"
+    ip_adapter_scale: float = 0.55
+    ip_adapter_max_reference_images: int = 6
+    ip_adapter_use_face_crop: bool = True
     paired_head_weight: float = 1.0
     paired_edit_weight: float = 1.35
     self_identity_weight: float = 0.45
@@ -80,9 +92,18 @@ class InferenceConfig:
     """推理配置。"""
 
     base_model_id: str = "diffusers/stable-diffusion-xl-1.0-inpainting-0.1"
+    base_model_variant: str = "fp16"
     enable_depth_condition: bool = False
     controlnet_model_id: str = "diffusers/controlnet-depth-sdxl-1.0"
     lora_weights_path: str = ""
+    enable_ip_adapter: bool = False
+    ip_adapter_model_id: str = str(Path(__file__).resolve().parents[1] / "model" / "generation" / "ip-adapter")
+    ip_adapter_subfolder: str = "sdxl_models"
+    ip_adapter_weight_name: str = "ip-adapter-plus-face_sdxl_vit-h.safetensors"
+    ip_adapter_image_encoder_folder: str = "sdxl_models/image_encoder"
+    ip_adapter_scale: float = 0.55
+    ip_adapter_max_reference_images: int = 6
+    ip_adapter_use_face_crop: bool = True
     quantization_backend: str = "quanto"
     quantization_dtype: str = "float8"
     quantize_components: tuple[str, ...] = ("unet", "controlnet")
@@ -117,7 +138,7 @@ def default_generation_paths() -> GenerationPaths:
     face_paths = default_face_paths()
     generation_root = _path_from_env(
         "GEN_OUTPUT_ROOT",
-        Path("~/datasets/deformity_generation"),
+        default_image_output_root() / "generation",
     )
     prepared_root = _path_from_env("GEN_PREPARED_ROOT", generation_root / "prepared")
     summaries_root = _path_from_env("GEN_SUMMARIES_ROOT", generation_root / "summaries")

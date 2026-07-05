@@ -14,7 +14,7 @@ from typing import Any
 
 import cv2
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageDraw, ImageFont
 
 from project_utils.io import write_json
 from .index import build_generation_manifest
@@ -51,6 +51,14 @@ def _row_path(row: dict[str, Any], *keys: str) -> Path | None:
         if value:
             return Path(value)
     return None
+
+
+def _view_sort_key(view_id: str) -> tuple[int, int | str]:
+    """让数字视角按数值排序，非数字视角稳定排在后面。"""
+    text = str(view_id)
+    if text.isdigit():
+        return 0, int(text)
+    return 1, text
 
 
 def _load_rgb_image(path: str | Path) -> Image.Image:
@@ -98,6 +106,106 @@ def _load_binary_mask(path: Path) -> np.ndarray | None:
     if mask is None:
         return None
     return mask > 0
+
+
+def _pre_reference_rows_by_case(manifest_rows: list[dict[str, Any]]) -> dict[str, list[dict[str, Any]]]:
+    """按病例收集术前 reference 行，供 IP-Adapter 多视角条件使用。"""
+    rows_by_case: dict[str, list[dict[str, Any]]] = {}
+    for row in manifest_rows:
+        if str(row.get("stage") or "") != "术前":
+            continue
+        case_id = str(row.get("case_id") or "").strip()
+        if not case_id:
+            continue
+        rows_by_case.setdefault(case_id, []).append(row)
+    for rows in rows_by_case.values():
+        rows.sort(key=lambda item: _view_sort_key(str(item.get("view_id") or "")))
+    return rows_by_case
+
+
+def _load_ip_adapter_reference_images(
+    case_id: str,
+    reference_rows: list[dict[str, Any]],
+    paths: GenerationPaths,
+    config: InferenceConfig,
+    issues: list[dict[str, Any]],
+) -> list[Image.Image]:
+    """读取同病例术前多视角图，裁成 face crop 后作为 IP-Adapter reference。"""
+    max_images = max(0, int(config.ip_adapter_max_reference_images))
+    if max_images <= 0:
+        return []
+
+    images: list[Image.Image] = []
+    for row in reference_rows[:max_images]:
+        image_path = _row_path(row, "sanitized_image_path", "image_path")
+        if image_path is None or not image_path.exists():
+            issues.append(
+                {
+                    "kind": "missing_ip_adapter_reference",
+                    "case_id": case_id,
+                    "view_id": row.get("view_id"),
+                    "image_path": str(image_path or ""),
+                }
+            )
+            continue
+
+        reference_bgr = cv2.imread(str(image_path))
+        if reference_bgr is None:
+            issues.append(
+                {
+                    "kind": "ip_adapter_reference_read_failed",
+                    "case_id": case_id,
+                    "view_id": row.get("view_id"),
+                    "image_path": str(image_path),
+                }
+            )
+            continue
+
+        if config.apply_eye_privacy_mask and not str(image_path).startswith(str(paths.sanitized_root)):
+            rel_path = _resolve_rel_path(paths, image_path)
+            privacy_mask_path = _row_path(row, "eye_privacy_mask_path")
+            if privacy_mask_path is None:
+                privacy_mask_path = _mask_path(paths.privacy_mask_root, rel_path)
+            privacy_mask = _load_binary_mask(privacy_mask_path)
+            if privacy_mask is not None:
+                reference_bgr = _apply_privacy_fill(reference_bgr, privacy_mask, config.privacy_fill)
+
+        if config.ip_adapter_use_face_crop:
+            face_mask_path = _row_path(row, "face_mask_path")
+            face_box = _crop_box_or_full(
+                reference_bgr.shape,
+                _load_mask_bbox(face_mask_path) if face_mask_path is not None else None,
+            )
+            reference_bgr = _crop_array(reference_bgr, face_box)
+
+        images.append(Image.fromarray(cv2.cvtColor(reference_bgr, cv2.COLOR_BGR2RGB)))
+
+    return images
+
+
+def _build_ip_adapter_image_embeds(
+    pipe,
+    reference_images: list[Image.Image],
+    device,
+    do_classifier_free_guidance: bool,
+):
+    """按训练侧同一规则编码 IP-Adapter reference，避开 diffusers 默认 hidden-state 维度假设。"""
+    import torch
+
+    from .train import _encode_ip_adapter_image_embeds
+
+    image_embeds = _encode_ip_adapter_image_embeds(
+        image_batches=[reference_images],
+        image_encoder=getattr(pipe, "image_encoder", None),
+        feature_extractor=getattr(pipe, "feature_extractor", None),
+        unet=pipe.unet,
+        device=device,
+    )
+    if image_embeds is None:
+        return None
+    if do_classifier_free_guidance:
+        image_embeds = [torch.cat([torch.zeros_like(single), single], dim=0) for single in image_embeds]
+    return image_embeds
 
 
 def _blur_mask(mask: np.ndarray, blur_px: int) -> np.ndarray:
@@ -169,6 +277,50 @@ def _composite_with_mask(
     return mixed.clip(0, 255).astype(np.uint8)
 
 
+_PREVIEW_LABELS = ("术前参考图", "重绘区域", "深度条件图", "模型直接生成", "术前重绘结果")
+_PREVIEW_FONT_PATHS = (
+    "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
+    "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.otf",
+    "/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc",
+    "/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc",
+    "/usr/share/fonts/truetype/arphic/uming.ttc",
+)
+
+
+def _load_preview_font(size: int) -> ImageFont.FreeTypeFont | ImageFont.ImageFont:
+    """优先用 CJK 字体渲染中文预览标签。"""
+    for font_path in _PREVIEW_FONT_PATHS:
+        path = Path(font_path)
+        if path.exists():
+            return ImageFont.truetype(str(path), size=size)
+    return ImageFont.load_default()
+
+
+def _label_preview_tile(tile_bgr: np.ndarray, label: str) -> np.ndarray:
+    """给预览小图加业务含义标签，避免 raw/composite 这类内部命名。"""
+    font_size = max(32, min(80, tile_bgr.shape[0] // 9))
+    font = _load_preview_font(font_size)
+    image = Image.fromarray(cv2.cvtColor(tile_bgr, cv2.COLOR_BGR2RGB))
+    draw = ImageDraw.Draw(image, "RGBA")
+    pad_x = max(10, font_size // 2)
+    pad_y = max(6, font_size // 3)
+    bbox = draw.textbbox((0, 0), label, font=font)
+    while font_size > 16 and bbox[2] - bbox[0] + pad_x * 2 > image.width:
+        font_size -= 2
+        font = _load_preview_font(font_size)
+        pad_x = max(10, font_size // 2)
+        pad_y = max(6, font_size // 3)
+        bbox = draw.textbbox((0, 0), label, font=font)
+    label_width = bbox[2] - bbox[0]
+    label_height = bbox[3] - bbox[1]
+    draw.rectangle(
+        (0, 0, min(image.width, label_width + pad_x * 2), label_height + pad_y * 2),
+        fill=(0, 0, 0, 176),
+    )
+    draw.text((pad_x, pad_y - bbox[1]), label, fill=(255, 255, 255, 255), font=font)
+    return cv2.cvtColor(np.asarray(image), cv2.COLOR_RGB2BGR)
+
+
 def _make_preview(
     input_bgr: np.ndarray,
     mask_u8: np.ndarray,
@@ -176,12 +328,30 @@ def _make_preview(
     raw_bgr: np.ndarray,
     composite_bgr: np.ndarray,
 ) -> np.ndarray:
-    """把输入、mask、depth、raw、composite 拼成一张调试预览图。"""
+    """把推理输入和输出拼成带中文标签的调试预览图。"""
     mask_bgr = cv2.cvtColor(mask_u8, cv2.COLOR_GRAY2BGR)
     height, width = input_bgr.shape[:2]
     tiles = [input_bgr, mask_bgr, depth_bgr, raw_bgr, composite_bgr]
     resized = [cv2.resize(tile, (width, height), interpolation=cv2.INTER_NEAREST) for tile in tiles]
-    return np.concatenate(resized, axis=1)
+    labeled = [_label_preview_tile(tile, label) for tile, label in zip(resized, _PREVIEW_LABELS)]
+    return np.concatenate(labeled, axis=1)
+
+
+def _write_image_or_issue(path: Path, image: np.ndarray, issues: list[dict[str, Any]], kind: str) -> bool:
+    """写图并显式检查 OpenCV 返回值，避免输出失败却被计为成功。"""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    ok = cv2.imwrite(str(path), image)
+    if not ok:
+        issues.append(
+            {
+                "kind": "write_failed",
+                "output_kind": kind,
+                "path": str(path),
+                "shape": list(image.shape),
+                "dtype": str(image.dtype),
+            }
+        )
+    return bool(ok)
 
 
 def _torch_dtype(name: str, device: torch.device) -> torch.dtype:
@@ -266,6 +436,40 @@ def _build_component_quant_config(config: InferenceConfig, component_name: str):
     raise ValueError(f"不支持的 quantization_backend: {config.quantization_backend}")
 
 
+def _validate_local_ip_adapter_files(config: InferenceConfig) -> None:
+    """本地 IP-Adapter 目录缺文件时提前报清楚，避免 diffusers 深层错误。"""
+    model_path = Path(str(config.ip_adapter_model_id))
+    if not model_path.exists():
+        return
+
+    required = [
+        model_path / str(config.ip_adapter_subfolder).strip() / str(config.ip_adapter_weight_name).strip(),
+    ]
+    image_encoder_folder = str(config.ip_adapter_image_encoder_folder).strip()
+    if image_encoder_folder:
+        image_encoder_path = model_path / image_encoder_folder
+        required.extend(
+            [
+                image_encoder_path / "config.json",
+                image_encoder_path / "model.safetensors",
+            ]
+        )
+
+    missing = [path for path in required if not path.exists()]
+    if missing:
+        missing_text = "\n".join(f"- {path}" for path in missing)
+        raise FileNotFoundError(
+            "本地 IP-Adapter 目录缺少必要文件：\n"
+            f"{missing_text}\n"
+            "可重新下载：\n"
+            "hf download h94/IP-Adapter "
+            "sdxl_models/image_encoder/config.json "
+            "sdxl_models/image_encoder/model.safetensors "
+            "sdxl_models/ip-adapter-plus-face_sdxl_vit-h.safetensors "
+            f"--local-dir {model_path} --max-workers 1"
+        )
+
+
 def _load_pipeline(config: InferenceConfig, device: torch.device):
     """按配置加载 SDXL Inpaint / ControlNet pipeline。"""
     from diffusers import StableDiffusionXLControlNetInpaintPipeline, StableDiffusionXLInpaintPipeline
@@ -275,6 +479,8 @@ def _load_pipeline(config: InferenceConfig, device: torch.device):
     quantization_config = _build_quantization_config(config)
     controlnet_quant_cfg = _build_component_quant_config(config, "controlnet")
     pipe_kwargs: dict[str, Any] = {"torch_dtype": dtype}
+    if config.base_model_variant:
+        pipe_kwargs["variant"] = config.base_model_variant
     pipe_cls = StableDiffusionXLInpaintPipeline
 
     if config.enable_depth_condition:
@@ -305,14 +511,29 @@ def _load_pipeline(config: InferenceConfig, device: torch.device):
         config.base_model_id,
         **pipe_kwargs,
     )
+    if config.enable_ip_adapter:
+        if not hasattr(pipe, "load_ip_adapter"):
+            raise RuntimeError("当前 diffusers pipeline 不支持 load_ip_adapter，请升级 diffusers。")
+        _validate_local_ip_adapter_files(config)
+        ip_adapter_kwargs: dict[str, Any] = {
+            "subfolder": str(config.ip_adapter_subfolder).strip(),
+            "weight_name": str(config.ip_adapter_weight_name).strip(),
+        }
+        image_encoder_folder = str(config.ip_adapter_image_encoder_folder).strip()
+        if image_encoder_folder:
+            ip_adapter_kwargs["image_encoder_folder"] = image_encoder_folder
+        pipe.load_ip_adapter(config.ip_adapter_model_id, **ip_adapter_kwargs)
+        if hasattr(pipe, "set_ip_adapter_scale"):
+            pipe.set_ip_adapter_scale(float(config.ip_adapter_scale))
     if config.lora_weights_path:
-        # LoRA 既支持 HF repo，也支持本地目录；默认不做强绑定路径假设。
+        # 启用 IP-Adapter 时必须先加载 IP-Adapter，再加载 LoRA；
+        # 否则 encoder_hid_proj 下的 LoRA key 会因模块尚未创建而被忽略。
         pipe.load_lora_weights(config.lora_weights_path)
         if hasattr(pipe, "fuse_lora"):
             pipe.fuse_lora(lora_scale=config.lora_scale)
     if not str(config.pipeline_device_map).strip():
         pipe.to(device)
-    if hasattr(pipe, "enable_attention_slicing"):
+    if hasattr(pipe, "enable_attention_slicing") and not config.enable_ip_adapter:
         pipe.enable_attention_slicing()
     return pipe
 
@@ -334,6 +555,9 @@ def run_inference(
     # 输入图默认已经是 eye_mask 后的主数据；每个视角仍独立 inpaint，
     # 但种子会按 case_id/view_id 稳定，减小同病例多视角之间的随机漂移。
     input_rows = [row for row in manifest_rows if row.get("stage") == "术前"]
+    pre_reference_rows = _pre_reference_rows_by_case(manifest_rows) if config.enable_ip_adapter else {}
+    ip_adapter_reference_cache: dict[str, list[Image.Image]] = {}
+    ip_adapter_reference_count_by_case: dict[str, int] = {}
     if config.max_samples > 0:
         input_rows = input_rows[: config.max_samples]
 
@@ -463,6 +687,35 @@ def run_inference(
             "num_images_per_prompt": config.num_images_per_prompt,
             "generator": generator,
         }
+        if config.enable_ip_adapter:
+            case_id = str(row.get("case_id") or "").strip()
+            if case_id not in ip_adapter_reference_cache:
+                ip_adapter_reference_cache[case_id] = _load_ip_adapter_reference_images(
+                    case_id=case_id,
+                    reference_rows=pre_reference_rows.get(case_id, []),
+                    paths=paths,
+                    config=config,
+                    issues=issues,
+                )
+                ip_adapter_reference_count_by_case[case_id] = len(ip_adapter_reference_cache[case_id])
+            reference_images = ip_adapter_reference_cache[case_id]
+            if reference_images:
+                ip_adapter_image_embeds = _build_ip_adapter_image_embeds(
+                    pipe=pipe,
+                    reference_images=reference_images,
+                    device=device,
+                    do_classifier_free_guidance=float(config.guidance_scale) > 1.0,
+                )
+                if ip_adapter_image_embeds is not None:
+                    pipe_kwargs["ip_adapter_image_embeds"] = ip_adapter_image_embeds
+            else:
+                issues.append(
+                    {
+                        "kind": "empty_ip_adapter_references",
+                        "case_id": case_id,
+                        "view_id": row.get("view_id"),
+                    }
+                )
         if config.enable_depth_condition:
             pipe_kwargs.update(
                 {
@@ -475,6 +728,12 @@ def run_inference(
         result = pipe(**pipe_kwargs)
         generated_rgb = result.images[0]
         raw_crop_bgr = cv2.cvtColor(np.asarray(generated_rgb), cv2.COLOR_RGB2BGR)
+        if raw_crop_bgr.shape[:2] != cropped_base_bgr.shape[:2]:
+            raw_crop_bgr = cv2.resize(
+                raw_crop_bgr,
+                (cropped_base_bgr.shape[1], cropped_base_bgr.shape[0]),
+                interpolation=cv2.INTER_CUBIC,
+            )
 
         # 推理固定在 face crop 内运行，再把局部结果映射回整图。
         raw_bgr = _paste_array(base_bgr, raw_crop_bgr, face_box)
@@ -482,17 +741,17 @@ def run_inference(
         composite_bgr = _paste_array(base_bgr, composite_crop_bgr, face_box)
 
         raw_path = _mask_path(paths.inference_root / "raw", rel_path)
-        raw_path.parent.mkdir(parents=True, exist_ok=True)
-        cv2.imwrite(str(raw_path), raw_bgr)
-
         composite_path = _mask_path(paths.inference_root / "composited", rel_path)
-        composite_path.parent.mkdir(parents=True, exist_ok=True)
-        cv2.imwrite(str(composite_path), composite_bgr)
-
         preview_path = _mask_path(paths.inference_root / "preview", rel_path)
-        preview_path.parent.mkdir(parents=True, exist_ok=True)
         preview = _make_preview(base_bgr, inpaint_mask_u8, depth_bgr, raw_bgr, composite_bgr)
-        cv2.imwrite(str(preview_path), preview)
+        wrote_all = (
+            _write_image_or_issue(raw_path, raw_bgr, issues, "raw")
+            and _write_image_or_issue(composite_path, composite_bgr, issues, "composited")
+            and _write_image_or_issue(preview_path, preview, issues, "preview")
+        )
+        if not wrote_all:
+            failed_count += 1
+            continue
         success_count += 1
         predicted_views_by_case.setdefault(str(row.get("case_id") or ""), set()).add(str(row.get("view_id") or ""))
 
@@ -505,6 +764,8 @@ def run_inference(
         "inference_root": str(paths.inference_root),
         "device": str(device),
         "enable_depth_condition": bool(config.enable_depth_condition),
+        "enable_ip_adapter": bool(config.enable_ip_adapter),
+        "ip_adapter_reference_count_by_case": ip_adapter_reference_count_by_case,
         "quantization_backend": str(config.quantization_backend),
         "quantize_components": list(_normalized_quant_components(config)),
         "config": dataclass_to_dict(config),
