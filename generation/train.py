@@ -328,9 +328,9 @@ def _autocast_context(device: torch.device, dtype: torch.dtype):
 def _resolve_lora_target_modules(config: LoRATrainConfig) -> list[str]:
     """Resolve LoRA target modules from preset or explicit override.
 
-    - attention: original low-capacity attention-only LoRA.
+    - attention: original attention-only LoRA.
     - attention_conv: attention + UNet ResNet convolution blocks, better for
-      tiny-set overfitting and local geometry deformation tests.
+      tiny-set overfit and local geometry deformation tests.
     """
     override = [str(item).strip() for item in config.lora_target_modules if str(item).strip()]
     if override:
@@ -341,8 +341,8 @@ def _resolve_lora_target_modules(config: LoRATrainConfig) -> list[str]:
     if preset in {"attention", "attn", "original"}:
         return attention_modules
     if preset in {"attention_conv", "attn_conv", "conv", "surgical"}:
-        # PEFT matches module names by suffix. Extra names that do not appear in
-        # a specific diffusers version are harmless as long as some names match.
+        # PEFT matches module names by suffix. These names cover SDXL UNet
+        # attention projections and ResNet convolution blocks.
         return attention_modules + ["conv", "conv1", "conv2", "conv_shortcut"]
     raise ValueError(
         f"未知 lora_target_preset={config.lora_target_preset!r}，"
@@ -351,7 +351,7 @@ def _resolve_lora_target_modules(config: LoRATrainConfig) -> list[str]:
 
 
 def _clamp_timestep_range(config: LoRATrainConfig, num_train_timesteps: int) -> tuple[int, int]:
-    """Return inclusive timestep range used by training."""
+    """Return inclusive training timestep range."""
     upper_bound = max(0, int(num_train_timesteps) - 1)
     t_min = max(0, min(int(config.min_train_timestep), upper_bound))
     t_max = max(0, min(int(config.max_train_timestep), upper_bound))
@@ -366,8 +366,8 @@ def _clamp_timestep_range(config: LoRATrainConfig, num_train_timesteps: int) -> 
 def _latent_loss_weight(mask: torch.Tensor, config: LoRATrainConfig) -> torch.Tensor:
     """Build latent-space loss weights.
 
-    Outside-mask weight is 1.0. With the current defaults, mask pixels are
-    weighted 8.0 and the mask boundary receives an additional +2.0 weight.
+    Outside-mask weight is 1.0. With defaults, mask pixels are weighted 8.0
+    and the boundary band receives an additional +2.0 weight.
     """
     import torch
     import torch.nn.functional as F
@@ -830,7 +830,9 @@ def train_lora(
                 target = noise_scheduler.get_velocity(latents, noise, timesteps)
 
             loss_map = (model_pred.float() - target.float()) ** 2
-            latent_loss_weight = _latent_loss_weight(mask, config).to(device=loss_map.device, dtype=loss_map.dtype)
+            latent_loss_weight = _latent_loss_weight(mask, config).to(
+                device=loss_map.device, dtype=loss_map.dtype
+            )
             loss = (loss_map * latent_loss_weight).mean(dim=(1, 2, 3))
             loss = (loss * weights).mean() / max(1, config.gradient_accumulation_steps)
             loss_value = float(loss.detach().item())

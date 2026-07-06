@@ -277,7 +277,8 @@ def _composite_with_mask(
     return mixed.clip(0, 255).astype(np.uint8)
 
 
-_PREVIEW_LABELS = ("术前参考图", "重绘区域", "深度条件图", "模型直接生成", "术前重绘结果")
+_PREVIEW_LABELS_WITH_TARGET = ("术前输入", "术后真值", "重绘区域", "模型直接生成", "术前重绘结果")
+_PREVIEW_LABELS_NO_TARGET = ("术前输入", "重绘区域", "深度条件图", "模型直接生成", "术前重绘结果")
 _PREVIEW_FONT_PATHS = (
     "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
     "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.otf",
@@ -327,13 +328,24 @@ def _make_preview(
     depth_bgr: np.ndarray,
     raw_bgr: np.ndarray,
     composite_bgr: np.ndarray,
+    target_bgr: np.ndarray | None = None,
 ) -> np.ndarray:
-    """把推理输入和输出拼成带中文标签的调试预览图。"""
+    """把推理输入、术后真值和输出拼成调试预览图。
+
+    当 manifest 行包含 paired_post_path 时，第二列显示术后真值；
+    否则沿用旧逻辑显示深度条件图。这样 overfit 推理可以直接看
+    “术前输入 / 术后真值 / 模型输出 / 回贴结果”对照。
+    """
     mask_bgr = cv2.cvtColor(mask_u8, cv2.COLOR_GRAY2BGR)
     height, width = input_bgr.shape[:2]
-    tiles = [input_bgr, mask_bgr, depth_bgr, raw_bgr, composite_bgr]
+    if target_bgr is not None:
+        tiles = [input_bgr, target_bgr, mask_bgr, raw_bgr, composite_bgr]
+        labels = _PREVIEW_LABELS_WITH_TARGET
+    else:
+        tiles = [input_bgr, mask_bgr, depth_bgr, raw_bgr, composite_bgr]
+        labels = _PREVIEW_LABELS_NO_TARGET
     resized = [cv2.resize(tile, (width, height), interpolation=cv2.INTER_NEAREST) for tile in tiles]
-    labeled = [_label_preview_tile(tile, label) for tile, label in zip(resized, _PREVIEW_LABELS)]
+    labeled = [_label_preview_tile(tile, label) for tile, label in zip(resized, labels)]
     return np.concatenate(labeled, axis=1)
 
 
@@ -610,6 +622,12 @@ def run_inference(
             continue
 
         base_bgr = cv2.imread(str(image_path))
+        target_bgr = None
+        paired_post_value = str(row.get("paired_post_path") or "").strip()
+        if paired_post_value:
+            paired_post_path = _resolve_rel_path(paths, paired_post_value)
+            if paired_post_path.exists():
+                target_bgr = cv2.imread(str(paired_post_path))
         inpaint_mask_u8 = cv2.imread(str(inpaint_mask_path), cv2.IMREAD_GRAYSCALE)
         feather_mask_u8 = cv2.imread(str(feather_mask_path), cv2.IMREAD_GRAYSCALE)
         if base_bgr is None:
@@ -637,6 +655,12 @@ def run_inference(
             privacy_mask = _load_binary_mask(privacy_mask_path)
             if privacy_mask is not None:
                 base_bgr = _apply_privacy_fill(base_bgr, privacy_mask, config.privacy_fill)
+        if target_bgr is not None and target_bgr.shape[:2] != base_bgr.shape[:2]:
+            target_bgr = cv2.resize(
+                target_bgr,
+                (base_bgr.shape[1], base_bgr.shape[0]),
+                interpolation=cv2.INTER_CUBIC,
+            )
 
         prompt = str(config.prompt_template).format(
             doctor_token=row.get("doctor_token", "dr_style"),
@@ -743,7 +767,14 @@ def run_inference(
         raw_path = _mask_path(paths.inference_root / "raw", rel_path)
         composite_path = _mask_path(paths.inference_root / "composited", rel_path)
         preview_path = _mask_path(paths.inference_root / "preview", rel_path)
-        preview = _make_preview(base_bgr, inpaint_mask_u8, depth_bgr, raw_bgr, composite_bgr)
+        preview = _make_preview(
+            base_bgr,
+            inpaint_mask_u8,
+            depth_bgr,
+            raw_bgr,
+            composite_bgr,
+            target_bgr=target_bgr,
+        )
         wrote_all = (
             _write_image_or_issue(raw_path, raw_bgr, issues, "raw")
             and _write_image_or_issue(composite_path, composite_bgr, issues, "composited")

@@ -36,7 +36,7 @@ export IP_ADAPTER_MAX_REFERENCE_IMAGES="${IP_ADAPTER_MAX_REFERENCE_IMAGES:-6}"
 export MASK_LOSS_WEIGHT="${MASK_LOSS_WEIGHT:-8.0}"
 export BOUNDARY_LOSS_WEIGHT="${BOUNDARY_LOSS_WEIGHT:-2.0}"
 export MIN_TRAIN_TIMESTEP="${MIN_TRAIN_TIMESTEP:-0}"
-export MAX_TRAIN_TIMESTEP_RANGE="${MAX_TRAIN_TIMESTEP_RANGE:-600}"
+export MAX_TRAIN_TIMESTEP="${MAX_TRAIN_TIMESTEP:-600}"
 export LORA_TARGET_PRESET="${LORA_TARGET_PRESET:-attention_conv}"
 export LORA_TARGET_MODULES="${LORA_TARGET_MODULES:-}"
 CLEAR_OUTPUT="${CLEAR_OUTPUT:-1}"
@@ -89,7 +89,7 @@ config = update_dataclass(
     mask_loss_weight=float(os.environ["MASK_LOSS_WEIGHT"]),
     boundary_loss_weight=float(os.environ["BOUNDARY_LOSS_WEIGHT"]),
     min_train_timestep=int(os.environ["MIN_TRAIN_TIMESTEP"]),
-    max_train_timestep=int(os.environ["MAX_TRAIN_TIMESTEP_RANGE"]),
+    max_train_timestep=int(os.environ["MAX_TRAIN_TIMESTEP"]),
     lora_target_preset=os.environ["LORA_TARGET_PRESET"],
     lora_target_modules=tuple(
         item.strip()

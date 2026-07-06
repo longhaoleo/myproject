@@ -76,14 +76,17 @@ class LoRATrainConfig:
     ip_adapter_scale: float = 0.55
     ip_adapter_max_reference_images: int = 6
     ip_adapter_use_face_crop: bool = True
-    # Surgical inpainting overfit defaults: emphasize masked surgical region and
-    # train on low/mid noise timesteps that match strength≈0.45 inference.
+    # Surgical inpainting overfit defaults:
+    # - mask 内区域 loss 权重默认 8
+    # - mask 边界区域额外权重默认 2
+    # - timestep 默认限制到 0~600，更贴近 strength≈0.45 的局部编辑推理
+    # - 默认关闭 IP-Adapter 条件，避免 no-IP 过拟合实验发生条件错配
     mask_loss_weight: float = 8.0
     boundary_loss_weight: float = 2.0
     min_train_timestep: int = 0
     max_train_timestep: int = 600
-    # "attention" keeps the original LoRA scope; "attention_conv" also adapts
-    # UNet convolutional blocks for stronger local geometry fitting.
+    # attention_conv 会在原 attention LoRA 基础上增加 UNet conv target，
+    # 用于 tiny-set 过拟合验证局部几何拟合能力。
     lora_target_preset: str = "attention_conv"
     lora_target_modules: tuple[str, ...] = ()
     paired_head_weight: float = 1.0
