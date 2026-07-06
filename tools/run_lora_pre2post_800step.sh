@@ -26,13 +26,19 @@ export GRADIENT_CHECKPOINTING="${GRADIENT_CHECKPOINTING:-1}"
 export RANK="${RANK:-16}"
 export ALPHA="${ALPHA:-16}"
 export NUM_WORKERS="${NUM_WORKERS:-0}"
-export ENABLE_IP_ADAPTER_CONDITION="${ENABLE_IP_ADAPTER_CONDITION:-1}"
+export ENABLE_IP_ADAPTER_CONDITION="${ENABLE_IP_ADAPTER_CONDITION:-0}"
 export IP_ADAPTER_MODEL_ID="${IP_ADAPTER_MODEL_ID:-${PROJECT_ROOT}/model/generation/ip-adapter}"
 export IP_ADAPTER_SUBFOLDER="${IP_ADAPTER_SUBFOLDER:-sdxl_models}"
 export IP_ADAPTER_WEIGHT_NAME="${IP_ADAPTER_WEIGHT_NAME:-ip-adapter-plus-face_sdxl_vit-h.safetensors}"
 export IP_ADAPTER_IMAGE_ENCODER_FOLDER="${IP_ADAPTER_IMAGE_ENCODER_FOLDER:-sdxl_models/image_encoder}"
 export IP_ADAPTER_SCALE="${IP_ADAPTER_SCALE:-0.55}"
 export IP_ADAPTER_MAX_REFERENCE_IMAGES="${IP_ADAPTER_MAX_REFERENCE_IMAGES:-6}"
+export MASK_LOSS_WEIGHT="${MASK_LOSS_WEIGHT:-8.0}"
+export BOUNDARY_LOSS_WEIGHT="${BOUNDARY_LOSS_WEIGHT:-2.0}"
+export MIN_TRAIN_TIMESTEP="${MIN_TRAIN_TIMESTEP:-0}"
+export MAX_TRAIN_TIMESTEP_RANGE="${MAX_TRAIN_TIMESTEP_RANGE:-600}"
+export LORA_TARGET_PRESET="${LORA_TARGET_PRESET:-attention_conv}"
+export LORA_TARGET_MODULES="${LORA_TARGET_MODULES:-}"
 CLEAR_OUTPUT="${CLEAR_OUTPUT:-1}"
 
 if [[ "${CLEAR_OUTPUT}" == "1" ]]; then
@@ -80,6 +86,16 @@ config = update_dataclass(
     ip_adapter_image_encoder_folder=os.environ["IP_ADAPTER_IMAGE_ENCODER_FOLDER"],
     ip_adapter_scale=float(os.environ["IP_ADAPTER_SCALE"]),
     ip_adapter_max_reference_images=int(os.environ["IP_ADAPTER_MAX_REFERENCE_IMAGES"]),
+    mask_loss_weight=float(os.environ["MASK_LOSS_WEIGHT"]),
+    boundary_loss_weight=float(os.environ["BOUNDARY_LOSS_WEIGHT"]),
+    min_train_timestep=int(os.environ["MIN_TRAIN_TIMESTEP"]),
+    max_train_timestep=int(os.environ["MAX_TRAIN_TIMESTEP_RANGE"]),
+    lora_target_preset=os.environ["LORA_TARGET_PRESET"],
+    lora_target_modules=tuple(
+        item.strip()
+        for item in os.environ.get("LORA_TARGET_MODULES", "").split(",")
+        if item.strip()
+    ),
 )
 summary = train_lora(paths=paths, config=config)
 print(json.dumps(summary, ensure_ascii=False, indent=2))

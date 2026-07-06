@@ -325,6 +325,68 @@ def _autocast_context(device: torch.device, dtype: torch.dtype):
     return torch.autocast(device_type=device.type, dtype=dtype, enabled=enabled)
 
 
+def _resolve_lora_target_modules(config: LoRATrainConfig) -> list[str]:
+    """Resolve LoRA target modules from preset or explicit override.
+
+    - attention: original low-capacity attention-only LoRA.
+    - attention_conv: attention + UNet ResNet convolution blocks, better for
+      tiny-set overfitting and local geometry deformation tests.
+    """
+    override = [str(item).strip() for item in config.lora_target_modules if str(item).strip()]
+    if override:
+        return override
+
+    attention_modules = ["to_q", "to_k", "to_v", "to_out.0"]
+    preset = str(config.lora_target_preset).strip().lower()
+    if preset in {"attention", "attn", "original"}:
+        return attention_modules
+    if preset in {"attention_conv", "attn_conv", "conv", "surgical"}:
+        # PEFT matches module names by suffix. Extra names that do not appear in
+        # a specific diffusers version are harmless as long as some names match.
+        return attention_modules + ["conv", "conv1", "conv2", "conv_shortcut"]
+    raise ValueError(
+        f"未知 lora_target_preset={config.lora_target_preset!r}，"
+        "可选：attention / attention_conv；或用 lora_target_modules 显式指定。"
+    )
+
+
+def _clamp_timestep_range(config: LoRATrainConfig, num_train_timesteps: int) -> tuple[int, int]:
+    """Return inclusive timestep range used by training."""
+    upper_bound = max(0, int(num_train_timesteps) - 1)
+    t_min = max(0, min(int(config.min_train_timestep), upper_bound))
+    t_max = max(0, min(int(config.max_train_timestep), upper_bound))
+    if t_max < t_min:
+        raise ValueError(
+            f"非法 timestep 范围：min_train_timestep={config.min_train_timestep}, "
+            f"max_train_timestep={config.max_train_timestep}。应满足 min <= max。"
+        )
+    return t_min, t_max
+
+
+def _latent_loss_weight(mask: torch.Tensor, config: LoRATrainConfig) -> torch.Tensor:
+    """Build latent-space loss weights.
+
+    Outside-mask weight is 1.0. With the current defaults, mask pixels are
+    weighted 8.0 and the mask boundary receives an additional +2.0 weight.
+    """
+    import torch
+    import torch.nn.functional as F
+
+    mask_binary = (mask > 0.5).to(dtype=torch.float32)
+    mask_weight = max(1.0, float(config.mask_loss_weight))
+    loss_weight = torch.ones_like(mask_binary, dtype=torch.float32)
+    loss_weight = loss_weight + (mask_weight - 1.0) * mask_binary
+
+    boundary_weight = max(0.0, float(config.boundary_loss_weight))
+    if boundary_weight > 0:
+        dilated = F.max_pool2d(mask_binary, kernel_size=3, stride=1, padding=1)
+        eroded = 1.0 - F.max_pool2d(1.0 - mask_binary, kernel_size=3, stride=1, padding=1)
+        boundary = (dilated - eroded).clamp(min=0.0, max=1.0)
+        loss_weight = loss_weight + boundary_weight * boundary
+
+    return loss_weight
+
+
 def _encode_prompts(
     prompts: list[str],
     tokenizers,
@@ -615,11 +677,18 @@ def train_lora(
             noise_scheduler=noise_scheduler,
         )
 
+    lora_target_modules = _resolve_lora_target_modules(config)
+    print(
+        "[train_lora] "
+        f"lora_target_preset={config.lora_target_preset} "
+        f"target_modules={lora_target_modules}",
+        flush=True,
+    )
     lora_cfg = LoraConfig(
         r=config.rank,
         lora_alpha=config.alpha,
         lora_dropout=config.dropout,
-        target_modules=["to_q", "to_k", "to_v", "to_out.0"],
+        target_modules=lora_target_modules,
     )
     unet.add_adapter(lora_cfg)
     if config.gradient_checkpointing and hasattr(unet, "enable_gradient_checkpointing"):
@@ -674,6 +743,10 @@ def train_lora(
         num_epochs = max(1, config.num_train_epochs)
         max_train_steps = num_epochs * effective_steps_per_epoch
 
+    timestep_min, timestep_max = _clamp_timestep_range(
+        config, int(noise_scheduler.config.num_train_timesteps)
+    )
+
     global_step = 0
     running_loss = 0.0
     recent_loss = 0.0
@@ -689,7 +762,10 @@ def train_lora(
         f"grad_accum={config.gradient_accumulation_steps} resolution={config.resolution} "
         f"dtype={weight_dtype} device={device} "
         f"gradient_checkpointing={bool(config.gradient_checkpointing)} "
-        f"ip_adapter_condition={bool(config.enable_ip_adapter_condition)}",
+        f"ip_adapter_condition={bool(config.enable_ip_adapter_condition)} "
+        f"timestep_range=[{timestep_min}, {timestep_max}] "
+        f"mask_loss_weight={float(config.mask_loss_weight):.3g} "
+        f"boundary_loss_weight={float(config.boundary_loss_weight):.3g}",
         flush=True,
     )
 
@@ -710,8 +786,8 @@ def train_lora(
 
             noise = torch.randn_like(latents)
             timesteps = torch.randint(
-                0,
-                noise_scheduler.config.num_train_timesteps,
+                timestep_min,
+                timestep_max + 1,
                 (latents.shape[0],),
                 device=device,
                 dtype=torch.long,
@@ -753,7 +829,9 @@ def train_lora(
             if noise_scheduler.config.prediction_type == "v_prediction":
                 target = noise_scheduler.get_velocity(latents, noise, timesteps)
 
-            loss = ((model_pred.float() - target.float()) ** 2).mean(dim=(1, 2, 3))
+            loss_map = (model_pred.float() - target.float()) ** 2
+            latent_loss_weight = _latent_loss_weight(mask, config).to(device=loss_map.device, dtype=loss_map.dtype)
+            loss = (loss_map * latent_loss_weight).mean(dim=(1, 2, 3))
             loss = (loss * weights).mean() / max(1, config.gradient_accumulation_steps)
             loss_value = float(loss.detach().item())
             if not math.isfinite(loss_value):

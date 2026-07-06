@@ -76,6 +76,16 @@ class LoRATrainConfig:
     ip_adapter_scale: float = 0.55
     ip_adapter_max_reference_images: int = 6
     ip_adapter_use_face_crop: bool = True
+    # Surgical inpainting overfit defaults: emphasize masked surgical region and
+    # train on low/mid noise timesteps that match strength≈0.45 inference.
+    mask_loss_weight: float = 8.0
+    boundary_loss_weight: float = 2.0
+    min_train_timestep: int = 0
+    max_train_timestep: int = 600
+    # "attention" keeps the original LoRA scope; "attention_conv" also adapts
+    # UNet convolutional blocks for stronger local geometry fitting.
+    lora_target_preset: str = "attention_conv"
+    lora_target_modules: tuple[str, ...] = ()
     paired_head_weight: float = 1.0
     paired_edit_weight: float = 1.35
     self_identity_weight: float = 0.45
