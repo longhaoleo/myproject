@@ -277,8 +277,8 @@ def _composite_with_mask(
     return mixed.clip(0, 255).astype(np.uint8)
 
 
-_PREVIEW_LABELS_WITH_TARGET = ("术前输入", "术后真值", "重绘区域", "模型直接生成", "术前重绘结果")
-_PREVIEW_LABELS_NO_TARGET = ("术前输入", "重绘区域", "深度条件图", "模型直接生成", "术前重绘结果")
+_PREVIEW_LABELS_WITH_TARGET = ("术前输入", "真实术后", "预测术后", "回贴结果")
+_PREVIEW_LABELS_NO_TARGET = ("术前输入", "预测术后", "回贴结果")
 _PREVIEW_FONT_PATHS = (
     "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
     "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.otf",
@@ -324,25 +324,25 @@ def _label_preview_tile(tile_bgr: np.ndarray, label: str) -> np.ndarray:
 
 def _make_preview(
     input_bgr: np.ndarray,
-    mask_u8: np.ndarray,
-    depth_bgr: np.ndarray,
     raw_bgr: np.ndarray,
     composite_bgr: np.ndarray,
     target_bgr: np.ndarray | None = None,
 ) -> np.ndarray:
-    """把推理输入、术后真值和输出拼成调试预览图。
+    """把推理输入、真实术后和预测结果拼成直接对照预览图。
 
-    当 manifest 行包含 paired_post_path 时，第二列显示术后真值；
-    否则沿用旧逻辑显示深度条件图。这样 overfit 推理可以直接看
-    “术前输入 / 术后真值 / 模型输出 / 回贴结果”对照。
+    - 如果 manifest 行包含 paired_post_path，则显示：
+      术前输入 / 真实术后 / 预测术后 / 回贴结果。
+    - 否则显示：
+      术前输入 / 预测术后 / 回贴结果。
+
+    调试阶段不再显示 depth 条件图或 mask，避免干扰对真实术后与预测术后的直接比较。
     """
-    mask_bgr = cv2.cvtColor(mask_u8, cv2.COLOR_GRAY2BGR)
     height, width = input_bgr.shape[:2]
     if target_bgr is not None:
-        tiles = [input_bgr, target_bgr, mask_bgr, raw_bgr, composite_bgr]
+        tiles = [input_bgr, target_bgr, raw_bgr, composite_bgr]
         labels = _PREVIEW_LABELS_WITH_TARGET
     else:
-        tiles = [input_bgr, mask_bgr, depth_bgr, raw_bgr, composite_bgr]
+        tiles = [input_bgr, raw_bgr, composite_bgr]
         labels = _PREVIEW_LABELS_NO_TARGET
     resized = [cv2.resize(tile, (width, height), interpolation=cv2.INTER_NEAREST) for tile in tiles]
     labeled = [_label_preview_tile(tile, label) for tile, label in zip(resized, labels)]
@@ -768,11 +768,9 @@ def run_inference(
         composite_path = _mask_path(paths.inference_root / "composited", rel_path)
         preview_path = _mask_path(paths.inference_root / "preview", rel_path)
         preview = _make_preview(
-            base_bgr,
-            inpaint_mask_u8,
-            depth_bgr,
-            raw_bgr,
-            composite_bgr,
+            input_bgr=base_bgr,
+            raw_bgr=raw_bgr,
+            composite_bgr=composite_bgr,
             target_bgr=target_bgr,
         )
         wrote_all = (

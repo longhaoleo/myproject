@@ -6,7 +6,7 @@ export PYTHONPATH="${PROJECT_ROOT}:${PYTHONPATH:-}"
 
 # This script is for overfit verification. It runs inference on the same Train
 # split used by run_lora_pre2post_800step.sh, so preview images include:
-# 术前输入 / 术后真值 / 重绘区域 / 模型直接生成 / 术前重绘结果
+# 术前输入 / 真实术后 / 预测术后 / 回贴结果
 DATASET_ROOT="${DATASET_ROOT:-/root/autodl-tmp/deformity_dataset/Train}"
 export GEN_INPUT_ROOT="${GEN_INPUT_ROOT:-${DATASET_ROOT}/images}"
 export GEN_SAM_ROOT="${GEN_SAM_ROOT:-${DATASET_ROOT}/masks}"
